@@ -105,7 +105,7 @@ void UGSCharacterMovementComponent::StopAimDownSights()
 	RequestToStartADS = false;
 }
 
-void UGSCharacterMovementComponent::FGSSavedMove::Clear()
+void FGSSavedMove::Clear()
 {
 	Super::Clear();
 
@@ -113,7 +113,7 @@ void UGSCharacterMovementComponent::FGSSavedMove::Clear()
 	SavedRequestToStartADS = false;
 }
 
-uint8 UGSCharacterMovementComponent::FGSSavedMove::GetCompressedFlags() const
+uint8 FGSSavedMove::GetCompressedFlags() const
 {
 	uint8 Result = Super::GetCompressedFlags();
 
@@ -130,7 +130,7 @@ uint8 UGSCharacterMovementComponent::FGSSavedMove::GetCompressedFlags() const
 	return Result;
 }
 
-bool UGSCharacterMovementComponent::FGSSavedMove::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* Character, float MaxDelta) const
+bool FGSSavedMove::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* Character, float MaxDelta) const
 {
 	//Set which moves can be combined together. This will depend on the bit flags that are used.
 	if (SavedRequestToStartSprinting != ((FGSSavedMove*)NewMove.Get())->SavedRequestToStartSprinting)
@@ -146,7 +146,7 @@ bool UGSCharacterMovementComponent::FGSSavedMove::CanCombineWith(const FSavedMov
 	return Super::CanCombineWith(NewMove, Character, MaxDelta);
 }
 
-void UGSCharacterMovementComponent::FGSSavedMove::SetMoveFor(ACharacter* Character, float InDeltaTime, FVector const& NewAccel, FNetworkPredictionData_Client_Character& ClientData)
+void FGSSavedMove::SetMoveFor(ACharacter* Character, float InDeltaTime, FVector const& NewAccel, FNetworkPredictionData_Client_Character& ClientData)
 {
 	Super::SetMoveFor(Character, InDeltaTime, NewAccel, ClientData);
 
@@ -158,7 +158,7 @@ void UGSCharacterMovementComponent::FGSSavedMove::SetMoveFor(ACharacter* Charact
 	}
 }
 
-void UGSCharacterMovementComponent::FGSSavedMove::PrepMoveFor(ACharacter* Character)
+void FGSSavedMove::PrepMoveFor(ACharacter* Character)
 {
 	Super::PrepMoveFor(Character);
 
@@ -168,12 +168,12 @@ void UGSCharacterMovementComponent::FGSSavedMove::PrepMoveFor(ACharacter* Charac
 	}
 }
 
-UGSCharacterMovementComponent::FGSNetworkPredictionData_Client::FGSNetworkPredictionData_Client(const UCharacterMovementComponent& ClientMovement)
+FGSNetworkPredictionData_Client::FGSNetworkPredictionData_Client(const UCharacterMovementComponent& ClientMovement)
 	: Super(ClientMovement)
 {
 }
 
-FSavedMovePtr UGSCharacterMovementComponent::FGSNetworkPredictionData_Client::AllocateNewMove()
+FSavedMovePtr FGSNetworkPredictionData_Client::AllocateNewMove()
 {
 	return FSavedMovePtr(new FGSSavedMove());
 }
