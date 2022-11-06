@@ -1,10 +1,11 @@
-// Copyright 2020 Dan Kestranek.
+// Copyright 2022 Andrey Bicalho.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameplayTagContainer.h"
+#include "PhysCustomMovement.h"
 #include "GSCharacterMovementComponent.generated.h"
 
 
@@ -34,6 +35,9 @@ public:
 
 	// Aim Down Sights
 	uint8 SavedRequestToStartADS : 1;
+
+	// Any custom physics movement
+	uint8 SavedRequestToStartCustomMovement : 1;
 };
 
 class FGSNetworkPredictionData_Client : public FNetworkPredictionData_Client_Character
@@ -58,6 +62,8 @@ class GASSHOOTER_API UGSCharacterMovementComponent : public UCharacterMovementCo
 
 	friend class FGSSavedMove;
 
+	FPhysCustomMovement* PhysCustomMovement = nullptr;
+
 public:
 	UGSCharacterMovementComponent();
 
@@ -72,6 +78,7 @@ public:
 
 	uint8 RequestToStartSprinting : 1;
 	uint8 RequestToStartADS : 1;
+	uint8 RequestToStartPhysCustomMovement : 1;
 
 	FGameplayTag KnockedDownTag;
 	FGameplayTag InteractingTag;
@@ -80,6 +87,7 @@ public:
 	virtual float GetMaxSpeed() const override;
 	virtual void UpdateFromCompressedFlags(uint8 Flags) override;
 	virtual class FNetworkPredictionData_Client* GetPredictionData_Client() const override;
+	virtual void PhysCustom(float deltaTime, int32 Iterations) override;
 
 	// Sprint
 	UFUNCTION(BlueprintCallable, Category = "Sprint")
@@ -92,4 +100,15 @@ public:
 	void StartAimDownSights();
 	UFUNCTION(BlueprintCallable, Category = "Aim Down Sights")
 	void StopAimDownSights();
+
+	// Physics Custom Movement API
+	UFUNCTION(BlueprintCallable, Category = "Phys Custom Movement")
+	virtual void StartPhysCustomMovement(FPhysCustomMovement& inPhysCustomMovement);
+	UFUNCTION(BlueprintCallable, Category = "Phys Custom Movement")
+	virtual void StopPhysCustomMovement(const EMovementMode nextMovementMode);
+	UFUNCTION(BlueprintCallable, Category = "Phys Custom Movement")
+	virtual bool IsPhysCustomMovementActive() const;
+	// NOTE: this MUST match the selected custom flag for the 'RequestToStartPhysCustomMovement' in FGSSavedMove::GetCompressedFlags
+	virtual uint8 GetPhysCustomMovementModeFlag() const;
+	// ~Physics Custom Movement API
 };

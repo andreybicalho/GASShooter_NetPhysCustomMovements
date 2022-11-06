@@ -1,4 +1,4 @@
-// Copyright 2020 Dan Kestranek.
+// Copyright 2022 Andrey Bicalho.
 
 
 #include "Characters/GSCharacterMovementComponent.h"
@@ -54,6 +54,13 @@ float UGSCharacterMovementComponent::GetMaxSpeed() const
 		return Owner->GetMoveSpeed() * ADSSpeedMultiplier;
 	}
 
+	if (RequestToStartPhysCustomMovement)
+	{
+		// TODO: could use attribute set to hold a multiplier for the custom movement mode
+		//return Super::GetMaxSpeed() * attributeSetMultiplier;
+		return Owner->GetMoveSpeed();
+	}
+
 	return Owner->GetMoveSpeed();
 }
 
@@ -67,6 +74,8 @@ void UGSCharacterMovementComponent::UpdateFromCompressedFlags(uint8 Flags)
 	RequestToStartSprinting = (Flags & FSavedMove_Character::FLAG_Custom_0) != 0;
 
 	RequestToStartADS = (Flags & FSavedMove_Character::FLAG_Custom_1) != 0;
+
+	RequestToStartPhysCustomMovement = (Flags & FSavedMove_Character::FLAG_Custom_2) != 0;
 }
 
 FNetworkPredictionData_Client* UGSCharacterMovementComponent::GetPredictionData_Client() const
@@ -83,6 +92,83 @@ FNetworkPredictionData_Client* UGSCharacterMovementComponent::GetPredictionData_
 	}
 
 	return ClientPredictionData;
+}
+
+
+void UGSCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
+{
+	// Phys* functions should only run for characters with ROLE_Authority or ROLE_AutonomousProxy. However, Unreal calls PhysCustom in
+	// two separate locations, one of which doesn't check the role, so we must check it here to prevent this code from running on simulated proxies.
+	if (GetOwner()->GetLocalRole() == ROLE_SimulatedProxy)
+	{
+		return;
+	}
+
+	if (PhysCustomMovement)
+	{
+		if (!PhysCustomMovement->IsActive())
+		{
+			StopPhysCustomMovement(MOVE_Falling);
+			Super::PhysCustom(deltaTime, Iterations);
+			return;
+		}
+
+		if (CustomMovementMode == GetPhysCustomMovementModeFlag())
+		{
+			FVector newVelocity = FVector::ZeroVector;
+			PhysCustomMovement->UpdatePhysCustomMovement(deltaTime, Velocity, newVelocity);
+			Velocity = newVelocity;
+
+			const FVector adjustedVelocity = Velocity * deltaTime;
+			FHitResult Hit(1.f);
+			SafeMoveUpdatedComponent(adjustedVelocity, UpdatedComponent->GetComponentQuat(), true, Hit);
+		}
+	}
+
+	// Not sure if this is needed
+	Super::PhysCustom(deltaTime, Iterations);
+}
+
+void UGSCharacterMovementComponent::StartPhysCustomMovement(FPhysCustomMovement& inPhysCustomMovement)
+{
+	PhysCustomMovement = &inPhysCustomMovement;
+	
+	if (PhysCustomMovement)
+	{
+		RequestToStartPhysCustomMovement = PhysCustomMovement->BeginPhysCustomMovement(
+			GetCharacterOwner(), 
+			this, 
+			GetPhysCustomMovementModeFlag());
+	}
+}
+
+
+void UGSCharacterMovementComponent::StopPhysCustomMovement(const EMovementMode nextMovementMode)
+{
+	RequestToStartPhysCustomMovement = false;
+		
+	if (PhysCustomMovement)
+	{
+		PhysCustomMovement->EndPhysCustomMovement(nextMovementMode);
+		PhysCustomMovement = nullptr;
+	}
+	else
+	{
+		SetMovementMode(nextMovementMode);
+	}
+}
+
+
+bool UGSCharacterMovementComponent::IsPhysCustomMovementActive() const
+{
+	return PhysCustomMovement && PhysCustomMovement->IsActive();
+}
+
+
+uint8 UGSCharacterMovementComponent::GetPhysCustomMovementModeFlag() const
+{
+	// NOTE: this MUST match the selected custom flag for the 'RequestToStartPhysCustomMovement' in FGSSavedMove::GetCompressedFlags
+	return FGSSavedMove::FLAG_Custom_2;
 }
 
 void UGSCharacterMovementComponent::StartSprinting()
@@ -111,6 +197,7 @@ void FGSSavedMove::Clear()
 
 	SavedRequestToStartSprinting = false;
 	SavedRequestToStartADS = false;
+	SavedRequestToStartCustomMovement = false;
 }
 
 uint8 FGSSavedMove::GetCompressedFlags() const
@@ -125,6 +212,11 @@ uint8 FGSSavedMove::GetCompressedFlags() const
 	if (SavedRequestToStartADS)
 	{
 		Result |= FLAG_Custom_1;
+	}
+
+	if (SavedRequestToStartCustomMovement)
+	{
+		Result |= FLAG_Custom_2;
 	}
 
 	return Result;
@@ -143,6 +235,11 @@ bool FGSSavedMove::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* Char
 		return false;
 	}
 
+	if (SavedRequestToStartCustomMovement != ((FGSSavedMove*)NewMove.Get())->SavedRequestToStartCustomMovement)
+	{
+		return false;
+	}
+
 	return Super::CanCombineWith(NewMove, Character, MaxDelta);
 }
 
@@ -153,8 +250,11 @@ void FGSSavedMove::SetMoveFor(ACharacter* Character, float InDeltaTime, FVector 
 	UGSCharacterMovementComponent* CharacterMovement = Cast<UGSCharacterMovementComponent>(Character->GetCharacterMovement());
 	if (CharacterMovement)
 	{
+		// Copy values into the saved move
 		SavedRequestToStartSprinting = CharacterMovement->RequestToStartSprinting;
 		SavedRequestToStartADS = CharacterMovement->RequestToStartADS;
+
+		SavedRequestToStartCustomMovement = CharacterMovement->RequestToStartPhysCustomMovement;
 	}
 }
 
@@ -165,6 +265,8 @@ void FGSSavedMove::PrepMoveFor(ACharacter* Character)
 	UGSCharacterMovementComponent* CharacterMovement = Cast<UGSCharacterMovementComponent>(Character->GetCharacterMovement());
 	if (CharacterMovement)
 	{
+		// Copy values out of the saved move
+		CharacterMovement->RequestToStartPhysCustomMovement = SavedRequestToStartCustomMovement;
 	}
 }
 
