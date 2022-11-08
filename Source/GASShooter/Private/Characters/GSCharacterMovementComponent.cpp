@@ -193,7 +193,7 @@ void UGSCharacterMovementComponent::OnMovementModeChanged(EMovementMode Previous
 	{
 		if (PhysCustomMovement && PhysCustomMovement->IsActive())
 		{
-			UE_LOG(LogTemp, Display, TEXT("%s: %s"), *FString(__FUNCTION__), GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()));
+			//UE_LOG(LogTemp, Display, TEXT("%s: %s"), *FString(__FUNCTION__), GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()));
 			StopPhysCustomMovement();
 		}
 	}

@@ -43,5 +43,7 @@ enum class EGSAbilityInputID : uint8
 	// 11 Interact
 	Interact			UMETA(DisplayName = "Interact"),
 	// Phys Jump
-	PhysJump			UMETA(DisplayName = "Phys Jump")
+	PhysJump			UMETA(DisplayName = "Phys Jump"),
+	// Phys JetPack
+	PhysJetPack			UMETA(DisplayName = "Phys JetPack")
 };
