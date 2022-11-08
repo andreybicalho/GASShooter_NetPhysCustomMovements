@@ -54,11 +54,11 @@ float UGSCharacterMovementComponent::GetMaxSpeed() const
 		return Owner->GetMoveSpeed() * ADSSpeedMultiplier;
 	}
 
-	if (RequestToStartPhysCustomMovement)
+	if (RequestToStartPhysCustomMovement && PhysCustomMovement)
 	{
-		// TODO: could use attribute set to hold a multiplier for the custom movement mode
-		//return Super::GetMaxSpeed() * attributeSetMultiplier;
-		return Owner->GetMoveSpeed();
+		// TODO: could use attribute set to hold a multiplier for the custom movement mode so different characters have different speeds
+		//return PhysCustomMovement->GetMaxSpeed() * attributeSetMultiplier;
+		return PhysCustomMovement->GetMaxSpeed();
 	}
 
 	return Owner->GetMoveSpeed();
@@ -104,7 +104,7 @@ void UGSCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 		return;
 	}
 
-	if (PhysCustomMovement)
+	if (PhysCustomMovement && CustomMovementMode == GetPhysCustomMovementModeFlag())
 	{
 		if (!PhysCustomMovement->IsActive())
 		{
@@ -113,16 +113,13 @@ void UGSCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 			return;
 		}
 
-		if (CustomMovementMode == GetPhysCustomMovementModeFlag())
-		{
-			FVector newVelocity = FVector::ZeroVector;
-			PhysCustomMovement->UpdatePhysCustomMovement(deltaTime, Velocity, newVelocity);
-			Velocity = newVelocity;
+		FVector newVelocity = FVector::ZeroVector;
+		PhysCustomMovement->UpdateMovement(deltaTime, Velocity, newVelocity);
+		Velocity = newVelocity;
 
-			const FVector adjustedVelocity = Velocity * deltaTime;
-			FHitResult Hit(1.f);
-			SafeMoveUpdatedComponent(adjustedVelocity, UpdatedComponent->GetComponentQuat(), true, Hit);
-		}
+		const FVector adjustedVelocity = Velocity * deltaTime;
+		FHitResult hit(1.f);
+		SafeMoveUpdatedComponent(adjustedVelocity, UpdatedComponent->GetComponentQuat(), true, hit);
 	}
 
 	// Not sure if this is needed
@@ -135,13 +132,24 @@ void UGSCharacterMovementComponent::StartPhysCustomMovement(FPhysCustomMovement&
 	
 	if (PhysCustomMovement)
 	{
-		RequestToStartPhysCustomMovement = PhysCustomMovement->BeginPhysCustomMovement(
+		RequestToStartPhysCustomMovement = PhysCustomMovement->BeginMovement(
 			GetCharacterOwner(), 
 			this, 
 			GetPhysCustomMovementModeFlag());
 	}
 }
-
+//void UGSCharacterMovementComponent::StartPhysCustomMovement(TSharedPtr<FPhysCustomMovement> inPhysCustomMovement)
+//{
+//	if (ensure(inPhysCustomMovement.IsValid()))
+//	{
+//		PhysCustomMovement = inPhysCustomMovement.Get();
+//
+//		RequestToStartPhysCustomMovement = PhysCustomMovement->BeginMovement(
+//			GetCharacterOwner(),
+//			this,
+//			GetPhysCustomMovementModeFlag());
+//	}
+//}
 
 void UGSCharacterMovementComponent::StopPhysCustomMovement(const EMovementMode nextMovementMode)
 {
@@ -149,7 +157,7 @@ void UGSCharacterMovementComponent::StopPhysCustomMovement(const EMovementMode n
 		
 	if (PhysCustomMovement)
 	{
-		PhysCustomMovement->EndPhysCustomMovement(nextMovementMode);
+		PhysCustomMovement->EndMovement(nextMovementMode);
 		PhysCustomMovement = nullptr;
 	}
 	else
@@ -158,12 +166,10 @@ void UGSCharacterMovementComponent::StopPhysCustomMovement(const EMovementMode n
 	}
 }
 
-
 bool UGSCharacterMovementComponent::IsPhysCustomMovementActive() const
 {
 	return PhysCustomMovement && PhysCustomMovement->IsActive();
 }
-
 
 uint8 UGSCharacterMovementComponent::GetPhysCustomMovementModeFlag() const
 {

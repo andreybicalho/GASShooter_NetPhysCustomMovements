@@ -39,5 +39,7 @@ enum class EGSAbilityInputID : uint8
 	// 10 PrevWeapon
 	PrevWeapon			UMETA(DisplayName = "Previous Weapon"),
 	// 11 Interact
-	Interact			UMETA(DisplayName = "Interact")
+	Interact			UMETA(DisplayName = "Interact"),
+	// Phys Jump
+	PhysJump			UMETA(DisplayName = "Phys Jump")
 };

@@ -5,6 +5,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "PhysCustomMovement.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FPhysCustomMovementDelegate);
+
 /**
 *	Generalized Physics Custom Movement to a CharacterMovementComponent.
 *
@@ -18,47 +20,42 @@
 *	with a lot of different movements.
 *
 */
-USTRUCT(BlueprintType)
+USTRUCT()
 struct GASSHOOTER_API FPhysCustomMovement
 {
-	GENERATED_BODY()
+	GENERATED_USTRUCT_BODY()
 
 	/** Time elapsed so far for this movement */
 	UPROPERTY()
 	float CurrentTime = 0.f;
 
-	/** Whether or not this movement is running. */
+	/** Whether or not this movement is running */
 	UPROPERTY()
 	bool bIsActive = false;
 
+	// selected custom movement mode flag
 	uint8 CustomModeFlag;
+
+	/** overrides the maximum speed for this movement mode */
+	UPROPERTY()
+	float MaxSpeed = 999.f;
 
 	UPROPERTY()
 	UCharacterMovementComponent* CharacterMovementComponent = nullptr;
 
-	UPROPERTY()
-	ACharacter* Character = nullptr;
+	FPhysCustomMovementDelegate OnCustomMovementEnd;
 
 	FPhysCustomMovement()
 	{
 		CharacterMovementComponent = nullptr;
-		Character = nullptr;
+		MaxSpeed = 999.f;
 		bIsActive = false;
 		CurrentTime = 0.f;
 	}
 
-	FPhysCustomMovement(
-		UCharacterMovementComponent* inCharacterMovementComponent,
-		ACharacter* inCharacter
-	)
-		: CharacterMovementComponent(inCharacterMovementComponent)
-		, Character(inCharacter)
-	{
-		bIsActive = false;
-		CurrentTime = 0.f;
-	}
+	virtual ~FPhysCustomMovement() {}
 
-	virtual bool BeginPhysCustomMovement(ACharacter* inCharacter, UCharacterMovementComponent* inCharacterMovementComponent, const uint8 inCustomModeFlag)
+	virtual bool BeginMovement(ACharacter* inCharacter, UCharacterMovementComponent* inCharacterMovementComponent, const uint8 inCustomModeFlag)
 	{
 		bool bResult = false;
 
@@ -66,7 +63,6 @@ struct GASSHOOTER_API FPhysCustomMovement
 		{
 			CustomModeFlag = inCustomModeFlag;
 			CurrentTime = 0.f;
-			Character = inCharacter;
 			bIsActive = true;
 			CharacterMovementComponent = inCharacterMovementComponent;
 			CharacterMovementComponent->SetMovementMode(MOVE_Custom, CustomModeFlag);
@@ -78,7 +74,7 @@ struct GASSHOOTER_API FPhysCustomMovement
 	};
 
 	// end current movement; this is where you have a chance to clean up
-	virtual void EndPhysCustomMovement(const EMovementMode nextMovementMode)
+	virtual void EndMovement(const EMovementMode nextMovementMode)
 	{
 		if (CharacterMovementComponent)
 		{
@@ -87,21 +83,30 @@ struct GASSHOOTER_API FPhysCustomMovement
 		}
 
 		bIsActive = false;
+		CharacterMovementComponent = nullptr;
+
+		OnCustomMovementEnd.Broadcast();
 	};
 
 	// checks if movement can be done
-	virtual bool CanDoPhysCustomMovement(const float deltaTime) const { return true; };
+	virtual bool CanDoMovement(const float deltaTime) const { return true; };
 
 	// main update function, this is where you override to code your custom movement
-	virtual void UpdatePhysCustomMovement(const float deltaTime, const FVector& oldVelocity, FVector& outVelocity) 
+	virtual void UpdateMovement(const float deltaTime, const FVector& oldVelocity, FVector& outVelocity) 
 	{
 		// boilerplate code that you may want to follow
 		CurrentTime += deltaTime;
 
-		if (!CanDoPhysCustomMovement(deltaTime))
+		if (!CanDoMovement(deltaTime))
 		{
-			EndPhysCustomMovement(MOVE_Falling);
+			EndMovement(MOVE_Falling);
 		}
+	};
+
+	// overrides the maximum speed for this movement mode
+	virtual float GetMaxSpeed() const
+	{
+		return MaxSpeed;
 	};
 
 	// return the custom movement mode flag that was reserved for this custom movement
@@ -115,10 +120,10 @@ struct GASSHOOTER_API FPhysCustomMovement
 };
 
 
-USTRUCT(BlueprintType)
+USTRUCT()
 struct GASSHOOTER_API FPhysCustomMovement_Jump : public FPhysCustomMovement
 {
-	GENERATED_BODY()
+	GENERATED_USTRUCT_BODY()
 
 	UPROPERTY()
 	FVector LaunchVelocity = FVector::ZeroVector;
@@ -129,14 +134,16 @@ struct GASSHOOTER_API FPhysCustomMovement_Jump : public FPhysCustomMovement
 	UPROPERTY()
 	bool bZOverride = false;
 
-	virtual void SetLaunchVelocity(const FVector inLaunchVelocity, const bool bInXYOverride, const bool bInZOverride)
+	FPhysCustomMovement_Jump()
 	{
-		LaunchVelocity = inLaunchVelocity;
-		bXYOverride = bInXYOverride;
-		bZOverride = bInZOverride;
+		LaunchVelocity = FVector::ZeroVector;
+		bXYOverride = false;
+		bZOverride = false;
 	};
 
-	virtual void UpdatePhysCustomMovement(const float deltaTime, const FVector& oldVelocity, FVector& outVelocity) override
+	virtual ~FPhysCustomMovement_Jump() {}
+
+	virtual void UpdateMovement(const float deltaTime, const FVector& oldVelocity, FVector& outVelocity) override
 	{
 		CurrentTime += deltaTime;
 
@@ -152,13 +159,13 @@ struct GASSHOOTER_API FPhysCustomMovement_Jump : public FPhysCustomMovement
 			outVelocity.Z += LaunchVelocity.Z;
 		}
 
-		EndPhysCustomMovement(MOVE_Falling);
+		EndMovement(MOVE_Falling);
 	};
 
-	virtual void EndPhysCustomMovement(const EMovementMode nextMovementMode) override 
+	virtual void EndMovement(const EMovementMode nextMovementMode) override 
 	{
 		LaunchVelocity = FVector::ZeroVector;
 
-		FPhysCustomMovement::EndPhysCustomMovement(nextMovementMode);
+		FPhysCustomMovement::EndMovement(nextMovementMode);
 	}
 };
