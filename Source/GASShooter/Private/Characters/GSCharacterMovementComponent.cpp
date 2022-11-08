@@ -54,8 +54,9 @@ float UGSCharacterMovementComponent::GetMaxSpeed() const
 		return Owner->GetMoveSpeed() * ADSSpeedMultiplier;
 	}
 
-	if (RequestToStartPhysCustomMovement && PhysCustomMovement)
+	if (RequestToStartPhysCustomMovement && PhysCustomMovement && PhysCustomMovement->IsActive())
 	{
+		UE_LOG(LogTemp, Display, TEXT("%s: %s"), *FString(__FUNCTION__), GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()));
 		// TODO: could use attribute set to hold a multiplier for the custom movement mode so different characters have different speeds
 		//return PhysCustomMovement->GetMaxSpeed() * attributeSetMultiplier;
 		return PhysCustomMovement->GetMaxSpeed();
@@ -75,7 +76,7 @@ void UGSCharacterMovementComponent::UpdateFromCompressedFlags(uint8 Flags)
 
 	RequestToStartADS = (Flags & FSavedMove_Character::FLAG_Custom_1) != 0;
 
-	RequestToStartPhysCustomMovement = (Flags & FSavedMove_Character::FLAG_Custom_2) != 0;
+	RequestToStartPhysCustomMovement = (Flags & GetPhysCustomMovementModeFlag()) != 0;
 }
 
 FNetworkPredictionData_Client* UGSCharacterMovementComponent::GetPredictionData_Client() const
@@ -106,9 +107,10 @@ void UGSCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 
 	if (PhysCustomMovement && CustomMovementMode == GetPhysCustomMovementModeFlag())
 	{
+		UE_LOG(LogTemp, Display, TEXT("%s: %s"), *FString(__FUNCTION__), GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()));
 		if (!PhysCustomMovement->IsActive())
 		{
-			StopPhysCustomMovement(MOVE_Falling);
+			StopPhysCustomMovement();
 			Super::PhysCustom(deltaTime, Iterations);
 			return;
 		}
@@ -132,6 +134,10 @@ void UGSCharacterMovementComponent::StartPhysCustomMovement(FPhysCustomMovement&
 	
 	if (PhysCustomMovement)
 	{
+		UE_LOG(LogTemp, Display, TEXT("%s: %s: Requested To Start Custom Movement: %s"),
+			*FString(__FUNCTION__), GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()),
+			*PhysCustomMovement->MovementName.ToString());
+
 		RequestToStartPhysCustomMovement = PhysCustomMovement->BeginMovement(
 			GetCharacterOwner(), 
 			this, 
@@ -151,18 +157,19 @@ void UGSCharacterMovementComponent::StartPhysCustomMovement(FPhysCustomMovement&
 //	}
 //}
 
-void UGSCharacterMovementComponent::StopPhysCustomMovement(const EMovementMode nextMovementMode)
+void UGSCharacterMovementComponent::StopPhysCustomMovement()
 {
 	RequestToStartPhysCustomMovement = false;
 		
-	if (PhysCustomMovement)
+	if (PhysCustomMovement && PhysCustomMovement->IsActive())
 	{
-		PhysCustomMovement->EndMovement(nextMovementMode);
+		UE_LOG(LogTemp, Display, TEXT("%s: %s: Requested To Stop Custom Movement: %s"),
+			*FString(__FUNCTION__), 
+			GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()),
+			*PhysCustomMovement->MovementName.ToString());
+
+		PhysCustomMovement->EndMovement();
 		PhysCustomMovement = nullptr;
-	}
-	else
-	{
-		SetMovementMode(nextMovementMode);
 	}
 }
 
@@ -175,6 +182,21 @@ uint8 UGSCharacterMovementComponent::GetPhysCustomMovementModeFlag() const
 {
 	// NOTE: this MUST match the selected custom flag for the 'RequestToStartPhysCustomMovement' in FGSSavedMove::GetCompressedFlags
 	return FGSSavedMove::FLAG_Custom_2;
+}
+
+
+void UGSCharacterMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
+{
+	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
+
+	if (PreviousMovementMode == MOVE_Custom && PreviousCustomMode == GetPhysCustomMovementModeFlag())
+	{
+		if (PhysCustomMovement && PhysCustomMovement->IsActive())
+		{
+			UE_LOG(LogTemp, Display, TEXT("%s: %s"), *FString(__FUNCTION__), GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()));
+			StopPhysCustomMovement();
+		}
+	}
 }
 
 void UGSCharacterMovementComponent::StartSprinting()

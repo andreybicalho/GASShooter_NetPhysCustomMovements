@@ -26,15 +26,16 @@ protected:
 	UPROPERTY()
 	UGSCharacterMovementComponent* CharacterMovementComponent = nullptr;
 
-	bool bIsFinished = false;
+	UPROPERTY(Replicated)
+	FName CustomMovementName;
+
 public:
 	UGSAT_ApplyPhysCustomMovementBase(const FObjectInitializer& ObjectInitializer);
 
 	UFUNCTION(BlueprintCallable, Category = "Ability|Tasks|PhysCustomMovement")
 	virtual void Finish() {};
 
-	// TODO: needs replication?
-	//virtual void InitSimulatedTask(UGameplayTasksComponent& InGameplayTasksComponent) override;
+	virtual void InitSimulatedTask(UGameplayTasksComponent& InGameplayTasksComponent) override;
 
 protected:
 	virtual void InitAndApply() {};

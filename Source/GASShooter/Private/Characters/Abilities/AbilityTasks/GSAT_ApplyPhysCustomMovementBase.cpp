@@ -2,25 +2,21 @@
 
 
 #include "Characters/Abilities/AbilityTasks/GSAT_ApplyPhysCustomMovementBase.h"
+#include "Net/UnrealNetwork.h"
 
 UGSAT_ApplyPhysCustomMovementBase::UGSAT_ApplyPhysCustomMovementBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	bTickingTask = false;
-	
-	// TODO: should replicate?
-	//bSimulatedTask = true;
-
-	bIsFinished = false;
+	bSimulatedTask = true;
 }
 
-//void UGSAT_ApplyPhysCustomMovementBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-//{
-//}
-//
-//void UGSAT_ApplyPhysCustomMovementBase::InitSimulatedTask(UGameplayTasksComponent& InGameplayTasksComponent)
-//{
-//	Super::InitSimulatedTask(InGameplayTasksComponent);
-//
-//	InitPhysCustomMovement();
-//}
+void UGSAT_ApplyPhysCustomMovementBase::InitSimulatedTask(UGameplayTasksComponent& InGameplayTasksComponent)
+{
+	Super::InitSimulatedTask(InGameplayTasksComponent);
+}
+
+void UGSAT_ApplyPhysCustomMovementBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	DOREPLIFETIME(UGSAT_ApplyPhysCustomMovementBase, CustomMovementName);
+}

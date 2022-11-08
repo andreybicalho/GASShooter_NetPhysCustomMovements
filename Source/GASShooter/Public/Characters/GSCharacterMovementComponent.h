@@ -109,10 +109,13 @@ public:
 	//UFUNCTION(BlueprintCallable, Category = "Phys Custom Movement")
 	virtual void StartPhysCustomMovement(FPhysCustomMovement& inPhysCustomMovement);
 	UFUNCTION(BlueprintCallable, Category = "Phys Custom Movement")
-	virtual void StopPhysCustomMovement(const EMovementMode nextMovementMode);
+	virtual void StopPhysCustomMovement();
 	UFUNCTION(BlueprintCallable, Category = "Phys Custom Movement")
 	virtual bool IsPhysCustomMovementActive() const;
 	// NOTE: this MUST match the selected custom flag for the 'RequestToStartPhysCustomMovement' in FGSSavedMove::GetCompressedFlags
 	virtual uint8 GetPhysCustomMovementModeFlag() const;
 	// ~Physics Custom Movement API
+
+protected:
+	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
 };

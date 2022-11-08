@@ -24,6 +24,13 @@ USTRUCT()
 struct GASSHOOTER_API FPhysCustomMovement
 {
 	GENERATED_USTRUCT_BODY()
+		
+	/** Name of the custom movement. */
+	UPROPERTY()
+	FName MovementName;
+
+	// Selected custom movement mode flag: this will be set by the character movement component and must match the selected compressed flag
+	uint8 CustomModeFlag;
 
 	/** Time elapsed so far for this movement */
 	UPROPERTY()
@@ -32,9 +39,6 @@ struct GASSHOOTER_API FPhysCustomMovement
 	/** Whether or not this movement is running */
 	UPROPERTY()
 	bool bIsActive = false;
-
-	// selected custom movement mode flag
-	uint8 CustomModeFlag;
 
 	/** overrides the maximum speed for this movement mode */
 	UPROPERTY()
@@ -49,8 +53,8 @@ struct GASSHOOTER_API FPhysCustomMovement
 	{
 		CharacterMovementComponent = nullptr;
 		MaxSpeed = 999.f;
-		bIsActive = false;
 		CurrentTime = 0.f;
+		bIsActive = false;
 	}
 
 	virtual ~FPhysCustomMovement() {}
@@ -74,14 +78,8 @@ struct GASSHOOTER_API FPhysCustomMovement
 	};
 
 	// end current movement; this is where you have a chance to clean up
-	virtual void EndMovement(const EMovementMode nextMovementMode)
+	virtual void EndMovement()
 	{
-		if (CharacterMovementComponent)
-		{
-			// TODO: add support to end using another custom mode
-			CharacterMovementComponent->SetMovementMode(nextMovementMode);
-		}
-
 		bIsActive = false;
 		CharacterMovementComponent = nullptr;
 
@@ -99,8 +97,10 @@ struct GASSHOOTER_API FPhysCustomMovement
 
 		if (!CanDoMovement(deltaTime))
 		{
-			EndMovement(MOVE_Falling);
+			EndMovement();
 		}
+
+		// Do your cool movement...
 	};
 
 	// overrides the maximum speed for this movement mode
@@ -154,18 +154,31 @@ struct GASSHOOTER_API FPhysCustomMovement_Jump : public FPhysCustomMovement
 			outVelocity.X += LaunchVelocity.X;
 			outVelocity.Y += LaunchVelocity.Y;
 		}
+		else
+		{
+			outVelocity.X = LaunchVelocity.X;
+			outVelocity.Y = LaunchVelocity.Y;
+		}
+
 		if (!bZOverride)
 		{
 			outVelocity.Z += LaunchVelocity.Z;
 		}
+		else
+		{
+			outVelocity.Z = LaunchVelocity.Z;
+		}
 
-		EndMovement(MOVE_Falling);
+		if (CharacterMovementComponent)
+		{
+			CharacterMovementComponent->SetMovementMode(MOVE_Falling);
+		}
 	};
 
-	virtual void EndMovement(const EMovementMode nextMovementMode) override 
+	virtual void EndMovement() override 
 	{
 		LaunchVelocity = FVector::ZeroVector;
 
-		FPhysCustomMovement::EndMovement(nextMovementMode);
+		FPhysCustomMovement::EndMovement();
 	}
 };
