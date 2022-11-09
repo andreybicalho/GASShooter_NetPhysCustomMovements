@@ -5,22 +5,22 @@
 #include "Characters/GSCharacterMovementComponent.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
-#include "Net/UnrealNetwork.h"
 #include "GASShooter/GASShooter.h"
+//#include "Net/UnrealNetwork.h"
 
 UGSAT_ApplyPhysCustomJump::UGSAT_ApplyPhysCustomJump(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 }
 
-void UGSAT_ApplyPhysCustomJump::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(UGSAT_ApplyPhysCustomJump, LaunchVelocity);
-	DOREPLIFETIME(UGSAT_ApplyPhysCustomJump, bXYOverride);
-	DOREPLIFETIME(UGSAT_ApplyPhysCustomJump, bZOverride);
-}
+//void UGSAT_ApplyPhysCustomJump::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+//{
+//	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+//
+//	DOREPLIFETIME(UGSAT_ApplyPhysCustomJump, LaunchVelocity);
+//	DOREPLIFETIME(UGSAT_ApplyPhysCustomJump, bXYOverride);
+//	DOREPLIFETIME(UGSAT_ApplyPhysCustomJump, bZOverride);
+//}
 
 UGSAT_ApplyPhysCustomJump* UGSAT_ApplyPhysCustomJump::PhysJump(UGameplayAbility* OwningAbility, FName TaskInstanceName,
 																const FVector& inLaunchVelocity, bool bInXYOverride, bool bInZOverride, float inMaxSpeed)

@@ -15,13 +15,10 @@ class GASSHOOTER_API UGSAT_ApplyPhysCustomJump : public UGSAT_ApplyPhysCustomMov
 {
 	GENERATED_BODY()
 		
-	UPROPERTY(Replicated)
 	FVector LaunchVelocity = FVector::ZeroVector;
 
-	UPROPERTY(Replicated)
 	bool bXYOverride = false;
 
-	UPROPERTY(Replicated)
 	bool bZOverride = false;
 
 	// TODO: refactor to shared pointer? TSharedPtr<FPhysCustomMovement_Jump> PhysJumpMovement;

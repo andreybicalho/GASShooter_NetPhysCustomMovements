@@ -26,10 +26,8 @@ protected:
 	UPROPERTY()
 	UGSCharacterMovementComponent* CharacterMovementComponent = nullptr;
 
-	UPROPERTY(Replicated)
 	FName CustomMovementName;
 
-	UPROPERTY(Replicated)
 	float MaxSpeed = 2022.f;
 
 public:
@@ -37,8 +35,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Ability|Tasks|PhysCustomMovement")
 	virtual void Finish() {};
-
-	virtual void InitSimulatedTask(UGameplayTasksComponent& InGameplayTasksComponent) override;
 
 protected:
 	virtual void InitAndApply() {};
