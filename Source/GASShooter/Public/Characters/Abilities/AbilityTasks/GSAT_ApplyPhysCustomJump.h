@@ -33,7 +33,7 @@ public:
 	/** Apply jump to character's movement */
 	UFUNCTION(BlueprintCallable, Category = "Ability|Tasks", meta = (HidePin = "OwningAbility", DefaultToSelf = "OwningAbility", BlueprintInternalUseOnly = "TRUE"))
 	static UGSAT_ApplyPhysCustomJump* PhysJump(UGameplayAbility* OwningAbility, FName TaskInstanceName,
-												const FVector& inLaunchVelocity, bool bInXYOverride, bool bInZOverride);
+												const FVector& inLaunchVelocity, bool bInXYOverride, bool bInZOverride, float inMaxSpeed);
 
 	virtual void Activate() override;
 

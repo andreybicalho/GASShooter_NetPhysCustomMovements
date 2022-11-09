@@ -26,8 +26,6 @@ struct GASSHOOTER_API FPhysCustomMovement_JetPack : public FPhysCustomMovement
 	{
 		CurrentTime += deltaTime;
 
-		outVelocity = oldVelocity;
-		
 		if (const ACharacter* character = CharacterMovementComponent->GetCharacterOwner())
 		{
 			const FVector velocity = (character->GetActorForwardVector() + FVector::UpVector) * BaseAcceleration;
@@ -60,7 +58,7 @@ public:
 	UGSAT_ApplyPhysCustomJetPack(const FObjectInitializer& ObjectInitializer);
 
 	UFUNCTION(BlueprintCallable, Category = "Ability|Tasks", meta = (HidePin = "OwningAbility", DefaultToSelf = "OwningAbility", BlueprintInternalUseOnly = "TRUE"))
-	static UGSAT_ApplyPhysCustomJetPack* PhysJetPack(UGameplayAbility* OwningAbility, FName TaskInstanceName, const FVector& inJetPackAcceleration);
+	static UGSAT_ApplyPhysCustomJetPack* PhysJetPack(UGameplayAbility* OwningAbility, FName TaskInstanceName, const FVector& inJetPackAcceleration, float inMaxSpeed);
 
 	virtual void Activate() override;
 

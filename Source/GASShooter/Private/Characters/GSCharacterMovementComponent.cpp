@@ -75,18 +75,26 @@ void UGSCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 		//UE_LOG(LogTemp, Display, TEXT("%s: %s"), *FString(__FUNCTION__), GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()));
 		if (!PhysCustomMovement->IsActive())
 		{
+			UE_LOG(LogTemp, Warning, TEXT("%s: %s: Movement Mode is Set but is inactive. Requesting to stop it completely!"), *FString(__FUNCTION__), GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()));
+
 			StopPhysCustomMovement();
 			Super::PhysCustom(deltaTime, Iterations);
 			return;
 		}
 
-		FVector newVelocity = FVector::ZeroVector;
-		PhysCustomMovement->UpdateMovement(deltaTime, Velocity, newVelocity);
-		Velocity = newVelocity;
+		if (PhysCustomMovement->CanDoMovement(deltaTime))
+		{
+			const FVector oldVelocity = Velocity;
+			PhysCustomMovement->UpdateMovement(deltaTime, oldVelocity, Velocity);
 
-		const FVector adjustedVelocity = Velocity * deltaTime;
-		FHitResult hit(1.f);
-		SafeMoveUpdatedComponent(adjustedVelocity, UpdatedComponent->GetComponentQuat(), true, hit);
+			const FVector adjustedVelocity = Velocity * deltaTime;
+			FHitResult hit(1.f);
+			SafeMoveUpdatedComponent(adjustedVelocity, UpdatedComponent->GetComponentQuat(), true, hit);
+		}
+		else
+		{
+			StopPhysCustomMovement();
+		}
 	}
 
 	// Not sure if this is needed

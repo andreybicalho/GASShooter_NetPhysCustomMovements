@@ -12,13 +12,14 @@ UGSAT_ApplyPhysCustomJetPack::UGSAT_ApplyPhysCustomJetPack(const FObjectInitiali
 {
 }
 
-UGSAT_ApplyPhysCustomJetPack* UGSAT_ApplyPhysCustomJetPack::PhysJetPack(UGameplayAbility* OwningAbility, FName TaskInstanceName, const FVector& inJetPackAcceleration)
+UGSAT_ApplyPhysCustomJetPack* UGSAT_ApplyPhysCustomJetPack::PhysJetPack(UGameplayAbility* OwningAbility, FName TaskInstanceName, const FVector& inJetPackAcceleration, float inMaxSpeed)
 {
 	UGSAT_ApplyPhysCustomJetPack* abilityTask = NewAbilityTask<UGSAT_ApplyPhysCustomJetPack>(OwningAbility, TaskInstanceName);
 
 	if (abilityTask)
 	{
 		abilityTask->CustomMovementName = TaskInstanceName;
+		abilityTask->MaxSpeed = inMaxSpeed;
 		abilityTask->JetPackAcceleration = inJetPackAcceleration;
 		abilityTask->InitAndApply();
 
@@ -44,7 +45,7 @@ void UGSAT_ApplyPhysCustomJetPack::InitAndApply()
 			// TODO: refactor to shared pointer?
 			PhysJetPackMovement.MovementName = CustomMovementName;
 			PhysJetPackMovement.CharacterMovementComponent = CharacterMovementComponent;
-			PhysJetPackMovement.MaxSpeed = 2022.f;
+			PhysJetPackMovement.MaxSpeed = MaxSpeed;
 			PhysJetPackMovement.BaseAcceleration = JetPackAcceleration;
 			PhysJetPackMovement.OnCustomMovementEnd.AddDynamic(this, &ThisClass::OnPhysJetPackEnded);
 

@@ -95,11 +95,6 @@ struct GASSHOOTER_API FPhysCustomMovement
 		// boilerplate code that you may want to follow
 		CurrentTime += deltaTime;
 
-		if (!CanDoMovement(deltaTime))
-		{
-			EndMovement();
-		}
-
 		// Do your cool movement...
 	};
 
@@ -168,6 +163,8 @@ struct GASSHOOTER_API FPhysCustomMovement_Jump : public FPhysCustomMovement
 		{
 			outVelocity.Z = LaunchVelocity.Z;
 		}
+
+		outVelocity = outVelocity.GetClampedToMaxSize(GetMaxSpeed());
 
 		if (CharacterMovementComponent)
 		{

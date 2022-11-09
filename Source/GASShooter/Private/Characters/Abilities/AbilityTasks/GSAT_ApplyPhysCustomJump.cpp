@@ -23,13 +23,14 @@ void UGSAT_ApplyPhysCustomJump::GetLifetimeReplicatedProps(TArray<FLifetimePrope
 }
 
 UGSAT_ApplyPhysCustomJump* UGSAT_ApplyPhysCustomJump::PhysJump(UGameplayAbility* OwningAbility, FName TaskInstanceName,
-																const FVector& inLaunchVelocity, bool bInXYOverride, bool bInZOverride)
+																const FVector& inLaunchVelocity, bool bInXYOverride, bool bInZOverride, float inMaxSpeed)
 {
 	UGSAT_ApplyPhysCustomJump* jumpTask = NewAbilityTask<UGSAT_ApplyPhysCustomJump>(OwningAbility, TaskInstanceName);
 
 	if (jumpTask)
 	{
 		jumpTask->CustomMovementName = TaskInstanceName;
+		jumpTask->MaxSpeed = inMaxSpeed;
 		jumpTask->LaunchVelocity = inLaunchVelocity;
 		jumpTask->bXYOverride = bInXYOverride;
 		jumpTask->bZOverride = bInZOverride;
@@ -63,11 +64,12 @@ void UGSAT_ApplyPhysCustomJump::InitAndApply()
 			PhysJumpMovement->OnCustomMovementEnd.AddDynamic(this, &ThisClass::OnPhysJumpEnd);*/
 
 			PhysJumpMovement.MovementName = CustomMovementName;
+			PhysJumpMovement.MaxSpeed = MaxSpeed;
 			PhysJumpMovement.CharacterMovementComponent = CharacterMovementComponent;
 			PhysJumpMovement.LaunchVelocity = LaunchVelocity;
 			PhysJumpMovement.bXYOverride = bXYOverride;
 			PhysJumpMovement.bZOverride = bZOverride;
-			PhysJumpMovement.MaxSpeed = 2022.f;
+			PhysJumpMovement.MaxSpeed = MaxSpeed;
 			PhysJumpMovement.OnCustomMovementEnd.AddDynamic(this, &ThisClass::OnPhysJumpEnd);
 
 			CharacterMovementComponent->StartPhysCustomMovement(PhysJumpMovement);

@@ -29,6 +29,9 @@ protected:
 	UPROPERTY(Replicated)
 	FName CustomMovementName;
 
+	UPROPERTY(Replicated)
+	float MaxSpeed = 2022.f;
+
 public:
 	UGSAT_ApplyPhysCustomMovementBase(const FObjectInitializer& ObjectInitializer);
 
