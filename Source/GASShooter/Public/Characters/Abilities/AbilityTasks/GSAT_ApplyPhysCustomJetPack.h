@@ -34,6 +34,7 @@ struct GASSHOOTER_API FPhysCustomMovement_JetPack : public FPhysCustomMovement
 
 			const FVector acceleration = velocity * deltaTime;
 			outVelocity += acceleration;
+			outVelocity = outVelocity.GetClampedToMaxSize(GetMaxSpeed()); // prevents to go further than the max speed for the mode
 		}
 	};
 

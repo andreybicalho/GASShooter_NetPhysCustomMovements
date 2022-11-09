@@ -2,20 +2,10 @@
 
 
 #include "Characters/GSCharacterMovementComponent.h"
-#include "AbilitySystemComponent.h"
-#include "Characters/Abilities/GSAbilitySystemGlobals.h"
 #include "Characters/GSCharacterBase.h"
-#include "GameplayTagContainer.h"
 
 UGSCharacterMovementComponent::UGSCharacterMovementComponent()
 {
-	SprintSpeedMultiplier = 1.4f;
-	ADSSpeedMultiplier = 0.8f;
-	KnockedDownSpeedMultiplier = 0.4f;
-
-	KnockedDownTag = FGameplayTag::RequestGameplayTag("State.KnockedDown");
-	InteractingTag = FGameplayTag::RequestGameplayTag("State.Interacting");
-	InteractingRemovalTag = FGameplayTag::RequestGameplayTag("State.InteractingRemoval");
 }
 
 float UGSCharacterMovementComponent::GetMaxSpeed() const
@@ -30,28 +20,6 @@ float UGSCharacterMovementComponent::GetMaxSpeed() const
 	if (!Owner->IsAlive())
 	{
 		return 0.0f;
-	}
-
-	// Don't move while interacting or being interacted on (revived)
-	if (Owner->GetAbilitySystemComponent() && Owner->GetAbilitySystemComponent()->GetTagCount(InteractingTag)
-		> Owner->GetAbilitySystemComponent()->GetTagCount(InteractingRemovalTag))
-	{
-		return 0.0f;
-	}
-
-	if (Owner->GetAbilitySystemComponent() && Owner->GetAbilitySystemComponent()->HasMatchingGameplayTag(KnockedDownTag))
-	{
-		return Owner->GetMoveSpeed() * KnockedDownSpeedMultiplier;
-	}
-
-	if (RequestToStartSprinting)
-	{
-		return Owner->GetMoveSpeed() * SprintSpeedMultiplier;
-	}
-
-	if (RequestToStartADS)
-	{
-		return Owner->GetMoveSpeed() * ADSSpeedMultiplier;
 	}
 
 	if (RequestToStartPhysCustomMovement && PhysCustomMovement && PhysCustomMovement->IsActive())
@@ -72,9 +40,6 @@ void UGSCharacterMovementComponent::UpdateFromCompressedFlags(uint8 Flags)
 	//The Flags parameter contains the compressed input flags that are stored in the saved move.
 	//UpdateFromCompressed flags simply copies the flags from the saved move into the movement component.
 	//It basically just resets the movement component to the state when the move was made so it can simulate from there.
-	RequestToStartSprinting = (Flags & FSavedMove_Character::FLAG_Custom_0) != 0;
-
-	RequestToStartADS = (Flags & FSavedMove_Character::FLAG_Custom_1) != 0;
 
 	RequestToStartPhysCustomMovement = (Flags & GetPhysCustomMovementModeFlag()) != 0;
 }
@@ -130,6 +95,17 @@ void UGSCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 
 void UGSCharacterMovementComponent::StartPhysCustomMovement(FPhysCustomMovement& inPhysCustomMovement)
 {
+	if (PhysCustomMovement && PhysCustomMovement->IsActive())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s: %s: %s is still active. If you want to start %s, wait till the other movement is done or manually stop it."),
+			*FString(__FUNCTION__), 
+			GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()),
+			*PhysCustomMovement->MovementName.ToString(),
+			*inPhysCustomMovement.MovementName.ToString());
+
+		return;
+	}
+
 	PhysCustomMovement = &inPhysCustomMovement;
 	
 	if (PhysCustomMovement)
@@ -181,7 +157,7 @@ bool UGSCharacterMovementComponent::IsPhysCustomMovementActive() const
 uint8 UGSCharacterMovementComponent::GetPhysCustomMovementModeFlag() const
 {
 	// NOTE: this MUST match the selected custom flag for the 'RequestToStartPhysCustomMovement' in FGSSavedMove::GetCompressedFlags
-	return FGSSavedMove::FLAG_Custom_2;
+	return FGSSavedMove::FLAG_Custom_0;
 }
 
 
@@ -199,32 +175,10 @@ void UGSCharacterMovementComponent::OnMovementModeChanged(EMovementMode Previous
 	}
 }
 
-void UGSCharacterMovementComponent::StartSprinting()
-{
-	RequestToStartSprinting = true;
-}
-
-void UGSCharacterMovementComponent::StopSprinting()
-{
-	RequestToStartSprinting = false;
-}
-
-void UGSCharacterMovementComponent::StartAimDownSights()
-{
-	RequestToStartADS = true;
-}
-
-void UGSCharacterMovementComponent::StopAimDownSights()
-{
-	RequestToStartADS = false;
-}
-
 void FGSSavedMove::Clear()
 {
 	Super::Clear();
 
-	SavedRequestToStartSprinting = false;
-	SavedRequestToStartADS = false;
 	SavedRequestToStartCustomMovement = false;
 }
 
@@ -232,19 +186,9 @@ uint8 FGSSavedMove::GetCompressedFlags() const
 {
 	uint8 Result = Super::GetCompressedFlags();
 
-	if (SavedRequestToStartSprinting)
-	{
-		Result |= FLAG_Custom_0;
-	}
-
-	if (SavedRequestToStartADS)
-	{
-		Result |= FLAG_Custom_1;
-	}
-
 	if (SavedRequestToStartCustomMovement)
 	{
-		Result |= FLAG_Custom_2;
+		Result |= FLAG_Custom_0;
 	}
 
 	return Result;
@@ -253,15 +197,6 @@ uint8 FGSSavedMove::GetCompressedFlags() const
 bool FGSSavedMove::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* Character, float MaxDelta) const
 {
 	//Set which moves can be combined together. This will depend on the bit flags that are used.
-	if (SavedRequestToStartSprinting != ((FGSSavedMove*)NewMove.Get())->SavedRequestToStartSprinting)
-	{
-		return false;
-	}
-
-	if (SavedRequestToStartADS != ((FGSSavedMove*)NewMove.Get())->SavedRequestToStartADS)
-	{
-		return false;
-	}
 
 	if (SavedRequestToStartCustomMovement != ((FGSSavedMove*)NewMove.Get())->SavedRequestToStartCustomMovement)
 	{
@@ -279,9 +214,6 @@ void FGSSavedMove::SetMoveFor(ACharacter* Character, float InDeltaTime, FVector 
 	if (CharacterMovement)
 	{
 		// Copy values into the saved move
-		SavedRequestToStartSprinting = CharacterMovement->RequestToStartSprinting;
-		SavedRequestToStartADS = CharacterMovement->RequestToStartADS;
-
 		SavedRequestToStartCustomMovement = CharacterMovement->RequestToStartPhysCustomMovement;
 	}
 }

@@ -78,3 +78,5 @@ DerivedDataCache/*
 
 # Rider user specific files
 .idea/
+
+enc_temp_folder/

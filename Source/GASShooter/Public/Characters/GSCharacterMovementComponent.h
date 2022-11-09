@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "GameplayTagContainer.h"
 #include "PhysCustomMovement.h"
 #include "GSCharacterMovementComponent.generated.h"
 
@@ -29,12 +28,6 @@ public:
 	virtual void SetMoveFor(ACharacter* Character, float InDeltaTime, FVector const& NewAccel, class FNetworkPredictionData_Client_Character& ClientData) override;
 	///@brief Sets variables on character movement component before making a predictive correction.
 	virtual void PrepMoveFor(class ACharacter* Character) override;
-
-	// Sprint
-	uint8 SavedRequestToStartSprinting : 1;
-
-	// Aim Down Sights
-	uint8 SavedRequestToStartADS : 1;
 
 	// Any custom physics movement
 	uint8 SavedRequestToStartCustomMovement : 1;
@@ -69,39 +62,12 @@ class GASSHOOTER_API UGSCharacterMovementComponent : public UCharacterMovementCo
 public:
 	UGSCharacterMovementComponent();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Speed")
-	float SprintSpeedMultiplier;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Speed")
-	float ADSSpeedMultiplier;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Speed")
-	float KnockedDownSpeedMultiplier;
-
-	uint8 RequestToStartSprinting : 1;
-	uint8 RequestToStartADS : 1;
 	uint8 RequestToStartPhysCustomMovement : 1;
-
-	FGameplayTag KnockedDownTag;
-	FGameplayTag InteractingTag;
-	FGameplayTag InteractingRemovalTag;
 
 	virtual float GetMaxSpeed() const override;
 	virtual void UpdateFromCompressedFlags(uint8 Flags) override;
 	virtual class FNetworkPredictionData_Client* GetPredictionData_Client() const override;
 	virtual void PhysCustom(float deltaTime, int32 Iterations) override;
-
-	// Sprint
-	UFUNCTION(BlueprintCallable, Category = "Sprint")
-	void StartSprinting();
-	UFUNCTION(BlueprintCallable, Category = "Sprint")
-	void StopSprinting();
-
-	// Aim Down Sights
-	UFUNCTION(BlueprintCallable, Category = "Aim Down Sights")
-	void StartAimDownSights();
-	UFUNCTION(BlueprintCallable, Category = "Aim Down Sights")
-	void StopAimDownSights();
 
 	// Physics Custom Movement API
 	// TODO: refactor to shared pointer?
