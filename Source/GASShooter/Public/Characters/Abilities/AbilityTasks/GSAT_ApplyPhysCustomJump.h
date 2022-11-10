@@ -21,8 +21,6 @@ class GASSHOOTER_API UGSAT_ApplyPhysCustomJump : public UGSAT_ApplyPhysCustomMov
 
 	bool bZOverride = false;
 
-	TSharedPtr<FPhysCustomMovement_Jump> PhysCustomMovement;
-
 public:
 	UGSAT_ApplyPhysCustomJump(const FObjectInitializer& ObjectInitializer);
 
@@ -31,15 +29,6 @@ public:
 	static UGSAT_ApplyPhysCustomJump* PhysJump(UGameplayAbility* OwningAbility, FName TaskInstanceName,
 												const FVector& inLaunchVelocity, bool bInXYOverride, bool bInZOverride, float inMaxSpeed);
 
-	virtual void Activate() override;
-
-	virtual void OnDestroy(bool AbilityIsEnding) override;
-
-	virtual void Finish() override;
-
 protected:
 	virtual void InitAndApply() override;
-
-	UFUNCTION()
-	void OnPhysJumpEnd();
 };

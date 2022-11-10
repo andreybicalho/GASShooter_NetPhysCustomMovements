@@ -14,8 +14,6 @@ UCLASS()
 class GASSHOOTER_API UGSAT_ApplyPhysCustomSprint : public UGSAT_ApplyPhysCustomMovementBase
 {
 	GENERATED_BODY()
-	
-	TSharedPtr<FPhysCustomMovement_Sprint> PhysCustomMovement;
 
 public:
 	UGSAT_ApplyPhysCustomSprint(const FObjectInitializer& ObjectInitializer);
@@ -23,15 +21,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Ability|Tasks", meta = (HidePin = "OwningAbility", DefaultToSelf = "OwningAbility", BlueprintInternalUseOnly = "TRUE"))
 	static UGSAT_ApplyPhysCustomSprint* PhysSprint(UGameplayAbility* OwningAbility, FName TaskInstanceName, float inMaxSpeed);
 
-	virtual void Activate() override;
-
-	virtual void OnDestroy(bool AbilityIsEnding) override;
-
-	virtual void Finish() override;
-
 protected:
 	virtual void InitAndApply() override;
-
-	UFUNCTION()
-		void OnPhysSprintEnded();
 };

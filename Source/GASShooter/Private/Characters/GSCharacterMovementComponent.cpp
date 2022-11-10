@@ -70,7 +70,7 @@ void UGSCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 		return;
 	}
 
-	if (PhysCustomMovement && CustomMovementMode == GetPhysCustomMovementModeFlag())
+	if (PhysCustomMovement.IsValid() && CustomMovementMode == GetPhysCustomMovementModeFlag())
 	{
 		//UE_LOG(LogTemp, Display, TEXT("%s: %s"), *FString(__FUNCTION__), GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()));
 		if (!PhysCustomMovement->IsActive())
@@ -93,7 +93,7 @@ void UGSCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 		}
 		else
 		{
-			StopPhysCustomMovement();
+			SetMovementMode(MOVE_Falling);
 		}
 	}
 
@@ -147,7 +147,7 @@ void UGSCharacterMovementComponent::StopPhysCustomMovement()
 
 bool UGSCharacterMovementComponent::IsPhysCustomMovementActive() const
 {
-	return PhysCustomMovement && PhysCustomMovement->IsActive();
+	return PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive();
 }
 
 uint8 UGSCharacterMovementComponent::GetPhysCustomMovementModeFlag() const
@@ -163,11 +163,8 @@ void UGSCharacterMovementComponent::OnMovementModeChanged(EMovementMode Previous
 
 	if (PreviousMovementMode == MOVE_Custom && PreviousCustomMode == GetPhysCustomMovementModeFlag())
 	{
-		if (PhysCustomMovement && PhysCustomMovement->IsActive())
-		{
-			//UE_LOG(LogTemp, Display, TEXT("%s: %s"), *FString(__FUNCTION__), GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()));
-			StopPhysCustomMovement();
-		}
+		//UE_LOG(LogTemp, Display, TEXT("%s: %s"), *FString(__FUNCTION__), GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()));
+		StopPhysCustomMovement();
 	}
 }
 
