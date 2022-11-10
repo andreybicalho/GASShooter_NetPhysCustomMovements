@@ -55,9 +55,7 @@ class GASSHOOTER_API UGSCharacterMovementComponent : public UCharacterMovementCo
 
 	friend class FGSSavedMove;
 
-	// TODO: refactor to shared pointer
-	//TSharedPtr<FPhysCustomMovement> PhysCustomMovement;
-	FPhysCustomMovement* PhysCustomMovement = nullptr;
+	TSharedPtr<FPhysCustomMovement> PhysCustomMovement;
 
 public:
 	UGSCharacterMovementComponent();
@@ -70,10 +68,7 @@ public:
 	virtual void PhysCustom(float deltaTime, int32 Iterations) override;
 
 	// Physics Custom Movement API
-	// TODO: refactor to shared pointer?
-	//virtual void StartPhysCustomMovement(TSharedPtr<FPhysCustomMovement> inPhysCustomMovement);
-	//UFUNCTION(BlueprintCallable, Category = "Phys Custom Movement")
-	virtual void StartPhysCustomMovement(FPhysCustomMovement& inPhysCustomMovement);
+	virtual void StartPhysCustomMovement(TSharedPtr<FPhysCustomMovement> inPhysCustomMovement);
 	UFUNCTION(BlueprintCallable, Category = "Phys Custom Movement")
 	virtual void StopPhysCustomMovement();
 	UFUNCTION(BlueprintCallable, Category = "Phys Custom Movement")

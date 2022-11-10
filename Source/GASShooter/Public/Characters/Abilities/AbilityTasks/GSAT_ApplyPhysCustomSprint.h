@@ -7,26 +7,6 @@
 #include "Characters/PhysCustomMovement.h"
 #include "GSAT_ApplyPhysCustomSprint.generated.h"
 
-USTRUCT()
-struct GASSHOOTER_API FPhysCustomMovement_Sprint : public FPhysCustomMovement
-{
-	GENERATED_USTRUCT_BODY()
-
-	FPhysCustomMovement_Sprint()
-	{
-	};
-
-	virtual ~FPhysCustomMovement_Sprint() {}
-
-	virtual void UpdateMovement(const float deltaTime, const FVector& oldVelocity, FVector& outVelocity) override
-	{
-		CurrentTime += deltaTime;
-		
-		outVelocity = oldVelocity * GetMaxSpeed();
-		outVelocity = outVelocity.GetClampedToMaxSize(GetMaxSpeed());
-	};
-};
-
 /**
  * 
  */
@@ -35,7 +15,7 @@ class GASSHOOTER_API UGSAT_ApplyPhysCustomSprint : public UGSAT_ApplyPhysCustomM
 {
 	GENERATED_BODY()
 	
-	FPhysCustomMovement_Sprint PhysSprintMovement;
+	TSharedPtr<FPhysCustomMovement_Sprint> PhysCustomMovement;
 
 public:
 	UGSAT_ApplyPhysCustomSprint(const FObjectInitializer& ObjectInitializer);

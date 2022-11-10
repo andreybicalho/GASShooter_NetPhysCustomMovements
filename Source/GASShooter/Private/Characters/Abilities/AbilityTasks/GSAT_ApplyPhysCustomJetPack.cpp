@@ -42,14 +42,14 @@ void UGSAT_ApplyPhysCustomJetPack::InitAndApply()
 
 		if (CharacterMovementComponent)
 		{
-			// TODO: refactor to shared pointer?
-			PhysJetPackMovement.MovementName = CustomMovementName;
-			PhysJetPackMovement.CharacterMovementComponent = CharacterMovementComponent;
-			PhysJetPackMovement.MaxSpeed = MaxSpeed;
-			PhysJetPackMovement.BaseAcceleration = JetPackAcceleration;
-			PhysJetPackMovement.OnCustomMovementEnd.AddDynamic(this, &ThisClass::OnPhysJetPackEnded);
+			PhysCustomMovement = MakeShared<FPhysCustomMovement_JetPack>();
+			PhysCustomMovement->MovementName = CustomMovementName;
+			PhysCustomMovement->CharacterMovementComponent = CharacterMovementComponent;
+			PhysCustomMovement->MaxSpeed = MaxSpeed;
+			PhysCustomMovement->BaseAcceleration = JetPackAcceleration;
+			PhysCustomMovement->OnCustomMovementEnd.AddDynamic(this, &ThisClass::OnPhysJetPackEnded);
 
-			CharacterMovementComponent->StartPhysCustomMovement(PhysJetPackMovement);
+			CharacterMovementComponent->StartPhysCustomMovement(PhysCustomMovement);
 		}
 	}
 }
@@ -65,9 +65,9 @@ void UGSAT_ApplyPhysCustomJetPack::OnPhysJetPackEnded()
 
 void UGSAT_ApplyPhysCustomJetPack::Finish()
 {
-	if (PhysJetPackMovement.OnCustomMovementEnd.IsBound())
+	if (PhysCustomMovement.IsValid() && PhysCustomMovement->OnCustomMovementEnd.IsBound())
 	{
-		PhysJetPackMovement.OnCustomMovementEnd.RemoveAll(this);
+		PhysCustomMovement->OnCustomMovementEnd.RemoveAll(this);
 	}
 
 	if (ShouldBroadcastAbilityTaskDelegates())
@@ -80,12 +80,12 @@ void UGSAT_ApplyPhysCustomJetPack::Finish()
 
 void UGSAT_ApplyPhysCustomJetPack::OnDestroy(bool AbilityIsEnding)
 {
-	if (PhysJetPackMovement.OnCustomMovementEnd.IsBound())
+	if (PhysCustomMovement.IsValid() && PhysCustomMovement->OnCustomMovementEnd.IsBound())
 	{
-		PhysJetPackMovement.OnCustomMovementEnd.RemoveAll(this);
+		PhysCustomMovement->OnCustomMovementEnd.RemoveAll(this);
 	}
 
-	if (PhysJetPackMovement.IsActive())
+	if (PhysCustomMovement.IsValid () && PhysCustomMovement->IsActive())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%s: Movement is still active on character movement component. This can lead to a dangling pointer since task is ending but character movement component is still using the movement reference... trying to end the movement..."), ANSI_TO_TCHAR(__FUNCTION__));
 
@@ -94,7 +94,7 @@ void UGSAT_ApplyPhysCustomJetPack::OnDestroy(bool AbilityIsEnding)
 			CharacterMovementComponent->StopPhysCustomMovement();
 		}
 
-		PhysJetPackMovement.EndMovement();
+		PhysCustomMovement.Reset();
 	}
 
 	Super::OnDestroy(AbilityIsEnding);

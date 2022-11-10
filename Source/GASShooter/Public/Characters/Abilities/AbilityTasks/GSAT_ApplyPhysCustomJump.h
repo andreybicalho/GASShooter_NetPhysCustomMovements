@@ -21,8 +21,7 @@ class GASSHOOTER_API UGSAT_ApplyPhysCustomJump : public UGSAT_ApplyPhysCustomMov
 
 	bool bZOverride = false;
 
-	// TODO: refactor to shared pointer? TSharedPtr<FPhysCustomMovement_Jump> PhysJumpMovement;
-	FPhysCustomMovement_Jump PhysJumpMovement;
+	TSharedPtr<FPhysCustomMovement_Jump> PhysCustomMovement;
 
 public:
 	UGSAT_ApplyPhysCustomJump(const FObjectInitializer& ObjectInitializer);

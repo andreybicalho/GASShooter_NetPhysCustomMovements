@@ -41,13 +41,13 @@ void UGSAT_ApplyPhysCustomSprint::InitAndApply()
 
 		if (CharacterMovementComponent)
 		{
-			// TODO: refactor to shared pointer?
-			PhysSprintMovement.MovementName = CustomMovementName;
-			PhysSprintMovement.CharacterMovementComponent = CharacterMovementComponent;
-			PhysSprintMovement.MaxSpeed = MaxSpeed;
-			PhysSprintMovement.OnCustomMovementEnd.AddDynamic(this, &ThisClass::OnPhysSprintEnded);
+			PhysCustomMovement = MakeShared<FPhysCustomMovement_Sprint>();
+			PhysCustomMovement->MovementName = CustomMovementName;
+			PhysCustomMovement->CharacterMovementComponent = CharacterMovementComponent;
+			PhysCustomMovement->MaxSpeed = MaxSpeed;
+			PhysCustomMovement->OnCustomMovementEnd.AddDynamic(this, &ThisClass::OnPhysSprintEnded);
 
-			CharacterMovementComponent->StartPhysCustomMovement(PhysSprintMovement);
+			CharacterMovementComponent->StartPhysCustomMovement(PhysCustomMovement);
 		}
 	}
 }
@@ -63,9 +63,9 @@ void UGSAT_ApplyPhysCustomSprint::OnPhysSprintEnded()
 
 void UGSAT_ApplyPhysCustomSprint::Finish()
 {
-	if (PhysSprintMovement.OnCustomMovementEnd.IsBound())
+	if (PhysCustomMovement.IsValid() && PhysCustomMovement->OnCustomMovementEnd.IsBound())
 	{
-		PhysSprintMovement.OnCustomMovementEnd.RemoveAll(this);
+		PhysCustomMovement->OnCustomMovementEnd.RemoveAll(this);
 	}
 
 	if (ShouldBroadcastAbilityTaskDelegates())
@@ -78,12 +78,12 @@ void UGSAT_ApplyPhysCustomSprint::Finish()
 
 void UGSAT_ApplyPhysCustomSprint::OnDestroy(bool AbilityIsEnding)
 {
-	if (PhysSprintMovement.OnCustomMovementEnd.IsBound())
+	if (PhysCustomMovement.IsValid() && PhysCustomMovement->OnCustomMovementEnd.IsBound())
 	{
-		PhysSprintMovement.OnCustomMovementEnd.RemoveAll(this);
+		PhysCustomMovement->OnCustomMovementEnd.RemoveAll(this);
 	}
 
-	if (PhysSprintMovement.IsActive())
+	if (PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%s: Movement is still active on character movement component. This can lead to a dangling pointer since task is ending but character movement component is still using the movement reference... trying to end the movement..."), ANSI_TO_TCHAR(__FUNCTION__));
 
@@ -92,7 +92,7 @@ void UGSAT_ApplyPhysCustomSprint::OnDestroy(bool AbilityIsEnding)
 			CharacterMovementComponent->StopPhysCustomMovement();
 		}
 
-		PhysSprintMovement.EndMovement();
+		PhysCustomMovement.Reset();
 	}
 
 	Super::OnDestroy(AbilityIsEnding);

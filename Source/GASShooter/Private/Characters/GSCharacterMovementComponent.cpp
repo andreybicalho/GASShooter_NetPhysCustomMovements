@@ -101,51 +101,39 @@ void UGSCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 	Super::PhysCustom(deltaTime, Iterations);
 }
 
-void UGSCharacterMovementComponent::StartPhysCustomMovement(FPhysCustomMovement& inPhysCustomMovement)
+void UGSCharacterMovementComponent::StartPhysCustomMovement(TSharedPtr<FPhysCustomMovement> inPhysCustomMovement)
 {
 	if (PhysCustomMovement && PhysCustomMovement->IsActive())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%s: %s: %s is still active. If you want to start %s, wait till the other movement is done or manually stop it."),
-			*FString(__FUNCTION__), 
+			*FString(__FUNCTION__),
 			GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()),
 			*PhysCustomMovement->MovementName.ToString(),
-			*inPhysCustomMovement.MovementName.ToString());
+			*inPhysCustomMovement->MovementName.ToString());
 
 		return;
 	}
 
-	PhysCustomMovement = &inPhysCustomMovement;
-	
-	if (PhysCustomMovement)
+	PhysCustomMovement = inPhysCustomMovement;
+
+	if (inPhysCustomMovement.IsValid())
 	{
 		UE_LOG(LogTemp, Display, TEXT("%s: %s: Requested To Start Custom Movement: %s"),
 			*FString(__FUNCTION__), GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()),
 			*PhysCustomMovement->MovementName.ToString());
 
 		RequestToStartPhysCustomMovement = PhysCustomMovement->BeginMovement(
-			GetCharacterOwner(), 
-			this, 
+			GetCharacterOwner(),
+			this,
 			GetPhysCustomMovementModeFlag());
 	}
 }
-//void UGSCharacterMovementComponent::StartPhysCustomMovement(TSharedPtr<FPhysCustomMovement> inPhysCustomMovement)
-//{
-//	if (ensure(inPhysCustomMovement.IsValid()))
-//	{
-//		PhysCustomMovement = inPhysCustomMovement.Get();
-//
-//		RequestToStartPhysCustomMovement = PhysCustomMovement->BeginMovement(
-//			GetCharacterOwner(),
-//			this,
-//			GetPhysCustomMovementModeFlag());
-//	}
-//}
 
 void UGSCharacterMovementComponent::StopPhysCustomMovement()
 {
 	RequestToStartPhysCustomMovement = false;
 		
-	if (PhysCustomMovement && PhysCustomMovement->IsActive())
+	if (PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
 	{
 		UE_LOG(LogTemp, Display, TEXT("%s: %s: Requested To Stop Custom Movement: %s"),
 			*FString(__FUNCTION__), 
@@ -153,7 +141,7 @@ void UGSCharacterMovementComponent::StopPhysCustomMovement()
 			*PhysCustomMovement->MovementName.ToString());
 
 		PhysCustomMovement->EndMovement();
-		PhysCustomMovement = nullptr;
+		PhysCustomMovement.Reset();
 	}
 }
 

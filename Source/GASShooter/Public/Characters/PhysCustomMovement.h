@@ -3,6 +3,7 @@
 #pragma once
 
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/Character.h"
 #include "PhysCustomMovement.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FPhysCustomMovementDelegate);
@@ -115,6 +116,10 @@ struct GASSHOOTER_API FPhysCustomMovement
 };
 
 
+/**
+* An example of a simple jump (Launch).
+* 
+*/
 USTRUCT()
 struct GASSHOOTER_API FPhysCustomMovement_Jump : public FPhysCustomMovement
 {
@@ -178,4 +183,69 @@ struct GASSHOOTER_API FPhysCustomMovement_Jump : public FPhysCustomMovement
 
 		FPhysCustomMovement::EndMovement();
 	}
+};
+
+/**
+* An example of a simple jet pack.
+*
+*/
+USTRUCT()
+struct GASSHOOTER_API FPhysCustomMovement_JetPack : public FPhysCustomMovement
+{
+	GENERATED_USTRUCT_BODY()
+
+		UPROPERTY()
+		FVector BaseAcceleration;
+
+	FPhysCustomMovement_JetPack()
+	{
+	};
+
+	virtual ~FPhysCustomMovement_JetPack() {}
+
+	virtual void UpdateMovement(const float deltaTime, const FVector& oldVelocity, FVector& outVelocity) override
+	{
+		CurrentTime += deltaTime;
+
+		if (const ACharacter* character = CharacterMovementComponent->GetCharacterOwner())
+		{
+			const FVector velocity = (character->GetActorForwardVector() + FVector::UpVector) * BaseAcceleration;
+
+			const FVector acceleration = velocity * deltaTime;
+			outVelocity += acceleration;
+			outVelocity = outVelocity.GetClampedToMaxSize(GetMaxSpeed()); // prevents to go further than the max speed for the mode
+		}
+	};
+
+	virtual void EndMovement() override
+	{
+		FPhysCustomMovement::EndMovement();
+	}
+};
+
+/**
+* An example of a sprint.
+*
+*/
+USTRUCT()
+struct GASSHOOTER_API FPhysCustomMovement_Sprint : public FPhysCustomMovement
+{
+	GENERATED_USTRUCT_BODY()
+
+		FPhysCustomMovement_Sprint()
+	{
+	};
+
+	virtual ~FPhysCustomMovement_Sprint() {}
+
+	virtual void UpdateMovement(const float deltaTime, const FVector& oldVelocity, FVector& outVelocity) override
+	{
+		CurrentTime += deltaTime;
+
+		if (CharacterMovementComponent)
+		{
+			outVelocity = CharacterMovementComponent->GetCurrentAcceleration() * GetMaxSpeed();
+			outVelocity = outVelocity.GetClampedToMaxSize(GetMaxSpeed());
+		}
+	};
 };

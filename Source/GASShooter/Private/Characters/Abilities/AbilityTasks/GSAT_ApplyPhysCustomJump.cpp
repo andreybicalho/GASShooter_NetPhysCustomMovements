@@ -6,21 +6,11 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "GASShooter/GASShooter.h"
-//#include "Net/UnrealNetwork.h"
 
 UGSAT_ApplyPhysCustomJump::UGSAT_ApplyPhysCustomJump(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 }
-
-//void UGSAT_ApplyPhysCustomJump::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-//{
-//	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-//
-//	DOREPLIFETIME(UGSAT_ApplyPhysCustomJump, LaunchVelocity);
-//	DOREPLIFETIME(UGSAT_ApplyPhysCustomJump, bXYOverride);
-//	DOREPLIFETIME(UGSAT_ApplyPhysCustomJump, bZOverride);
-//}
 
 UGSAT_ApplyPhysCustomJump* UGSAT_ApplyPhysCustomJump::PhysJump(UGameplayAbility* OwningAbility, FName TaskInstanceName,
 																const FVector& inLaunchVelocity, bool bInXYOverride, bool bInZOverride, float inMaxSpeed)
@@ -56,23 +46,17 @@ void UGSAT_ApplyPhysCustomJump::InitAndApply()
 		
 		if (CharacterMovementComponent)
 		{
-			// TODO: refactor to shared pointer?
-			/*PhysJumpMovement = MakeShared<FPhysCustomMovement_Jump>();
-			PhysJumpMovement->LaunchVelocity = LaunchVelocity;
-			PhysJumpMovement->bXYOverride = bXYOverride;
-			PhysJumpMovement->bZOverride = bZOverride;
-			PhysJumpMovement->OnCustomMovementEnd.AddDynamic(this, &ThisClass::OnPhysJumpEnd);*/
+			PhysCustomMovement = MakeShared<FPhysCustomMovement_Jump>();
+			PhysCustomMovement->MovementName = CustomMovementName;
+			PhysCustomMovement->MaxSpeed = MaxSpeed;
+			PhysCustomMovement->CharacterMovementComponent = CharacterMovementComponent;
+			PhysCustomMovement->LaunchVelocity = LaunchVelocity;
+			PhysCustomMovement->bXYOverride = bXYOverride;
+			PhysCustomMovement->bZOverride = bZOverride;
+			PhysCustomMovement->MaxSpeed = MaxSpeed;
+			PhysCustomMovement->OnCustomMovementEnd.AddDynamic(this, &ThisClass::OnPhysJumpEnd);
 
-			PhysJumpMovement.MovementName = CustomMovementName;
-			PhysJumpMovement.MaxSpeed = MaxSpeed;
-			PhysJumpMovement.CharacterMovementComponent = CharacterMovementComponent;
-			PhysJumpMovement.LaunchVelocity = LaunchVelocity;
-			PhysJumpMovement.bXYOverride = bXYOverride;
-			PhysJumpMovement.bZOverride = bZOverride;
-			PhysJumpMovement.MaxSpeed = MaxSpeed;
-			PhysJumpMovement.OnCustomMovementEnd.AddDynamic(this, &ThisClass::OnPhysJumpEnd);
-
-			CharacterMovementComponent->StartPhysCustomMovement(PhysJumpMovement);
+			CharacterMovementComponent->StartPhysCustomMovement(PhysCustomMovement);
 		}
 	}
 }
@@ -88,9 +72,9 @@ void UGSAT_ApplyPhysCustomJump::OnPhysJumpEnd()
 
 void UGSAT_ApplyPhysCustomJump::Finish()
 {
-	if (PhysJumpMovement.OnCustomMovementEnd.IsBound())
+	if (PhysCustomMovement.IsValid() && PhysCustomMovement->OnCustomMovementEnd.IsBound())
 	{
-		PhysJumpMovement.OnCustomMovementEnd.RemoveAll(this);
+		PhysCustomMovement->OnCustomMovementEnd.RemoveAll(this);
 	}
 
 	if (ShouldBroadcastAbilityTaskDelegates())
@@ -103,12 +87,12 @@ void UGSAT_ApplyPhysCustomJump::Finish()
 
 void UGSAT_ApplyPhysCustomJump::OnDestroy(bool AbilityIsEnding)
 {
-	if (PhysJumpMovement.OnCustomMovementEnd.IsBound())
+	if (PhysCustomMovement.IsValid() && PhysCustomMovement->OnCustomMovementEnd.IsBound())
 	{
-		PhysJumpMovement.OnCustomMovementEnd.RemoveAll(this);
+		PhysCustomMovement->OnCustomMovementEnd.RemoveAll(this);
 	}
 
-	if (PhysJumpMovement.IsActive())
+	if (PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%s: Movement is still active on character movement component. This can lead to a dangling pointer since task is ending but character movement component is still using the movement reference... trying to end the movement..."), ANSI_TO_TCHAR(__FUNCTION__));
 
@@ -117,7 +101,7 @@ void UGSAT_ApplyPhysCustomJump::OnDestroy(bool AbilityIsEnding)
 			CharacterMovementComponent->StopPhysCustomMovement();
 		}
 
-		PhysJumpMovement.EndMovement();
+		PhysCustomMovement.Reset();
 	}
 
 	Super::OnDestroy(AbilityIsEnding);

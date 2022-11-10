@@ -5,42 +5,7 @@
 #include "CoreMinimal.h"
 #include "Characters/Abilities/AbilityTasks/GSAT_ApplyPhysCustomMovementBase.h"
 #include "Characters/PhysCustomMovement.h"
-#include "GameFramework/Character.h"
 #include "GSAT_ApplyPhysCustomJetPack.generated.h"
-
-USTRUCT()
-struct GASSHOOTER_API FPhysCustomMovement_JetPack : public FPhysCustomMovement
-{
-	GENERATED_USTRUCT_BODY()
-
-	UPROPERTY()
-	FVector BaseAcceleration;
-
-	FPhysCustomMovement_JetPack()
-	{
-	};
-
-	virtual ~FPhysCustomMovement_JetPack() {}
-
-	virtual void UpdateMovement(const float deltaTime, const FVector& oldVelocity, FVector& outVelocity) override
-	{
-		CurrentTime += deltaTime;
-
-		if (const ACharacter* character = CharacterMovementComponent->GetCharacterOwner())
-		{
-			const FVector velocity = (character->GetActorForwardVector() + FVector::UpVector) * BaseAcceleration;
-
-			const FVector acceleration = velocity * deltaTime;
-			outVelocity += acceleration;
-			outVelocity = outVelocity.GetClampedToMaxSize(GetMaxSpeed()); // prevents to go further than the max speed for the mode
-		}
-	};
-
-	virtual void EndMovement() override
-	{
-		FPhysCustomMovement::EndMovement();
-	}
-};
 
 /**
  * 
@@ -52,7 +17,7 @@ class GASSHOOTER_API UGSAT_ApplyPhysCustomJetPack : public UGSAT_ApplyPhysCustom
 
 	FVector JetPackAcceleration = FVector::ZeroVector;
 
-	FPhysCustomMovement_JetPack PhysJetPackMovement;
+	TSharedPtr<FPhysCustomMovement_JetPack> PhysCustomMovement;
 
 public:
 	UGSAT_ApplyPhysCustomJetPack(const FObjectInitializer& ObjectInitializer);
