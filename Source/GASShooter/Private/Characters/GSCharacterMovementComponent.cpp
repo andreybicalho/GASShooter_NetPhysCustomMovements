@@ -22,11 +22,9 @@ float UGSCharacterMovementComponent::GetMaxSpeed() const
 		return 0.0f;
 	}
 
-	if (RequestToStartPhysCustomMovement && PhysCustomMovement && PhysCustomMovement->IsActive())
+	if (RequestToStartPhysCustomMovement && PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
 	{
 		//UE_LOG(LogTemp, Display, TEXT("%s: %s"), *FString(__FUNCTION__), GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()));
-		// TODO: could use attribute set to hold a multiplier for the custom movement mode so different characters have different speeds
-		//return PhysCustomMovement->GetMaxSpeed() * attributeSetMultiplier;
 		return PhysCustomMovement->GetMaxSpeed();
 	}
 
@@ -103,7 +101,7 @@ void UGSCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 
 void UGSCharacterMovementComponent::StartPhysCustomMovement(TSharedPtr<FPhysCustomMovement> inPhysCustomMovement)
 {
-	if (PhysCustomMovement && PhysCustomMovement->IsActive())
+	if (PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%s: %s: %s is still active. If you want to start %s, wait till the other movement is done or manually stop it."),
 			*FString(__FUNCTION__),
