@@ -249,3 +249,73 @@ struct GASSHOOTER_API FPhysCustomMovement_Sprint : public FPhysCustomMovement
 		}
 	};
 };
+
+/**
+* An example of follow the points.
+*
+*/
+USTRUCT()
+struct GASSHOOTER_API FPhysCustomMovement_FollowPoints : public FPhysCustomMovement
+{
+	GENERATED_USTRUCT_BODY()
+
+	TArray<FVector> PathPoints = {};
+
+	float ConsumePointDistanceThreshold = 50.f;
+
+	FPhysCustomMovement_FollowPoints()
+	{
+	};
+
+	virtual ~FPhysCustomMovement_FollowPoints() {}
+
+	int32 FindNearestPoint(const FVector& location, FVector& outLocation) const
+	{
+		float distance = FLT_MAX;
+		int32 index = INDEX_NONE;
+
+		for (int32 i = 0; i < PathPoints.Num(); i++)
+		{
+			const float currentDist = FVector::Distance(location, PathPoints[i]);
+			if (currentDist <= distance)
+			{
+				distance = currentDist;
+				outLocation = PathPoints[i];
+				index = i;
+			}
+		}
+
+		return index;
+	};
+
+	virtual void UpdateMovement(const float deltaTime, const FVector& oldVelocity, FVector& outVelocity) override
+	{
+		CurrentTime += deltaTime;
+
+		if (CharacterMovementComponent)
+		{
+			const FVector currentLocation = CharacterMovementComponent->GetActorFeetLocation();
+			FVector nearestPoint;
+			const int32 nearestPointIndex = FindNearestPoint(currentLocation, nearestPoint);
+
+			if (!PathPoints.IsEmpty() && nearestPointIndex != INDEX_NONE)
+			{
+				const FVector direction = (nearestPoint - currentLocation).GetSafeNormal();
+
+				outVelocity = direction * GetMaxSpeed();
+
+				outVelocity = outVelocity.GetClampedToMaxSize(GetMaxSpeed());
+
+				const float distance = FVector::Distance(currentLocation, nearestPoint);
+				if (distance <= ConsumePointDistanceThreshold)
+				{
+					PathPoints.RemoveAt(nearestPointIndex);
+				}
+			}
+			else
+			{
+				CharacterMovementComponent->SetMovementMode(MOVE_Falling);
+			}
+		}
+	};
+};

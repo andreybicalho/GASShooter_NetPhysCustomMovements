@@ -48,7 +48,6 @@ void UGSAT_ApplyPhysCustomJump::InitAndApply()
 			movement->LaunchVelocity = LaunchVelocity;
 			movement->bXYOverride = bXYOverride;
 			movement->bZOverride = bZOverride;
-			movement->MaxSpeed = MaxSpeed;
 			movement->OnCustomMovementEnd.AddDynamic(this, &ThisClass::OnPhysCustomMovementEnded);
 
 			Move(PhysCustomMovement, movement);
