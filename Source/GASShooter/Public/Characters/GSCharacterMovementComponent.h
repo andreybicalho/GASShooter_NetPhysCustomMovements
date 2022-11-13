@@ -68,7 +68,7 @@ public:
 	virtual void PhysCustom(float deltaTime, int32 Iterations) override;
 
 	// Physics Custom Movement API
-	virtual void StartPhysCustomMovement(TSharedPtr<FPhysCustomMovement> inPhysCustomMovement);
+	virtual bool StartPhysCustomMovement(TSharedPtr<FPhysCustomMovement> inPhysCustomMovement);
 	/** Stop the current Phys Custom Movement. NOTE: if you call this you MUST set the next movement mode manually (UCharacterMovementComponent::SetMovementMode). */
 	UFUNCTION(BlueprintCallable, Category = "Phys Custom Movement")
 	virtual void StopPhysCustomMovement();

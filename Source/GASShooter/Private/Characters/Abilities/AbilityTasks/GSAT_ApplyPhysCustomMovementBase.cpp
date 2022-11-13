@@ -20,6 +20,26 @@ void UGSAT_ApplyPhysCustomMovementBase::OnPhysCustomMovementEnded()
 	Finish();
 }
 
+void UGSAT_ApplyPhysCustomMovementBase::Activate()
+{
+	Super::Activate();
+
+	if (!bActivated)
+	{
+		if (PhysCustomMovement.IsValid() && PhysCustomMovement->OnCustomMovementEnd.IsBound())
+		{
+			PhysCustomMovement->OnCustomMovementEnd.RemoveAll(this);
+		}
+
+		if (ShouldBroadcastAbilityTaskDelegates())
+		{
+			OnFailed.Broadcast();
+		}
+
+		EndTask();
+	}
+}
+
 void UGSAT_ApplyPhysCustomMovementBase::Finish()
 {
 	if (PhysCustomMovement.IsValid() && PhysCustomMovement->OnCustomMovementEnd.IsBound())

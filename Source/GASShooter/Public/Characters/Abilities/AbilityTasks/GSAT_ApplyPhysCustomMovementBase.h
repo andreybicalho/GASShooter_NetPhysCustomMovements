@@ -23,6 +23,9 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FApplyPhysCustomMovementDelegate OnFinish;
 
+	UPROPERTY(BlueprintAssignable)
+	FApplyPhysCustomMovementDelegate OnFailed;
+
 protected:
 	UPROPERTY()
 	UGSCharacterMovementComponent* CharacterMovementComponent = nullptr;
@@ -32,6 +35,8 @@ protected:
 	float MaxSpeed = 2022.f;
 
 	TSharedPtr<FPhysCustomMovement> PhysCustomMovement;
+
+	bool bActivated = false;
 
 public:
 	UGSAT_ApplyPhysCustomMovementBase(const FObjectInitializer& ObjectInitializer);
@@ -46,4 +51,6 @@ protected:
 
 	UFUNCTION()
 	virtual void OnPhysCustomMovementEnded();
+
+	virtual void Activate() override;
 };

@@ -45,7 +45,7 @@ void UGSAT_ApplyPhysCustomJetPack::InitAndApply()
 			movement->OnCustomMovementEnd.AddDynamic(this, &ThisClass::OnPhysCustomMovementEnded);
 
 			Move(PhysCustomMovement, movement);
-			CharacterMovementComponent->StartPhysCustomMovement(PhysCustomMovement);
+			bActivated = CharacterMovementComponent->StartPhysCustomMovement(PhysCustomMovement);
 		}
 	}
 }

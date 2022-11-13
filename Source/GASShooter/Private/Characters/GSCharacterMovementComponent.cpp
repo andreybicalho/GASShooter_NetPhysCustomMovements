@@ -99,17 +99,17 @@ void UGSCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 	Super::PhysCustom(deltaTime, Iterations);
 }
 
-void UGSCharacterMovementComponent::StartPhysCustomMovement(TSharedPtr<FPhysCustomMovement> inPhysCustomMovement)
+bool UGSCharacterMovementComponent::StartPhysCustomMovement(TSharedPtr<FPhysCustomMovement> inPhysCustomMovement)
 {
 	if (PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s: %s: %s is still active. If you want to start %s, wait till the other movement is done or manually stop it."),
+		UE_LOG(LogTemp, Warning, TEXT("%s: %s: %s is still active. If you want to start %s, wait till that movement is done or manually stop it."),
 			*FString(__FUNCTION__),
 			GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()),
 			*PhysCustomMovement->MovementName.ToString(),
 			*inPhysCustomMovement->MovementName.ToString());
 
-		return;
+		return false;
 	}
 
 	PhysCustomMovement = inPhysCustomMovement;
@@ -125,6 +125,8 @@ void UGSCharacterMovementComponent::StartPhysCustomMovement(TSharedPtr<FPhysCust
 			this,
 			GetPhysCustomMovementModeFlag());
 	}
+
+	return RequestToStartPhysCustomMovement;
 }
 
 void UGSCharacterMovementComponent::StopPhysCustomMovement()
