@@ -94,6 +94,11 @@ void UGSCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 			SetMovementMode(MOVE_Falling);
 		}
 	}
+	else
+	{
+		StopPhysCustomMovement();
+		SetMovementMode(MOVE_Falling);
+	}
 
 	// Not sure if this is needed
 	Super::PhysCustom(deltaTime, Iterations);

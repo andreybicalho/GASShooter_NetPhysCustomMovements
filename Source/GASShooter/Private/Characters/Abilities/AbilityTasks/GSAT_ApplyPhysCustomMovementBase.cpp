@@ -38,6 +38,13 @@ void UGSAT_ApplyPhysCustomMovementBase::Activate()
 
 		EndTask();
 	}
+	else
+	{
+		if (ShouldBroadcastAbilityTaskDelegates())
+		{
+			OnSuccess.Broadcast();
+		}
+	}
 }
 
 void UGSAT_ApplyPhysCustomMovementBase::Finish()

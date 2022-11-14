@@ -21,8 +21,11 @@ class GASSHOOTER_API UGSAT_ApplyPhysCustomMovementBase : public UAbilityTask
 
 public:
 	UPROPERTY(BlueprintAssignable)
-	FApplyPhysCustomMovementDelegate OnFinish;
+	FApplyPhysCustomMovementDelegate OnSuccess;
 
+	UPROPERTY(BlueprintAssignable)
+	FApplyPhysCustomMovementDelegate OnFinish;
+	
 	UPROPERTY(BlueprintAssignable)
 	FApplyPhysCustomMovementDelegate OnFailed;
 
