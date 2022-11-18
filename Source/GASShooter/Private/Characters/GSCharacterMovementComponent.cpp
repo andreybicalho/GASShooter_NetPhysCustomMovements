@@ -86,8 +86,14 @@ void UGSCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 			PhysCustomMovement->UpdateMovement(deltaTime, oldVelocity, Velocity);
 
 			const FVector adjustedVelocity = Velocity * deltaTime;
+			const FVector oldLocation = UpdatedComponent->GetComponentLocation();
 			FHitResult hit(1.f);
 			SafeMoveUpdatedComponent(adjustedVelocity, UpdatedComponent->GetComponentQuat(), true, hit);
+
+			if (!bJustTeleported && !HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
+			{
+				Velocity = (UpdatedComponent->GetComponentLocation() - oldLocation) / deltaTime;
+			}
 		}
 		else
 		{
@@ -137,17 +143,18 @@ bool UGSCharacterMovementComponent::StartPhysCustomMovement(TSharedPtr<FPhysCust
 void UGSCharacterMovementComponent::StopPhysCustomMovement()
 {
 	RequestToStartPhysCustomMovement = false;
-		
+	
+	UE_LOG(LogTemp, Display, TEXT("%s: %s: Requested To Stop Custom Movement: %s"),
+		*FString(__FUNCTION__),
+		GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()),
+		PhysCustomMovement.IsValid() ? *PhysCustomMovement->MovementName.ToString() : TEXT("Invalid"));
+
 	if (PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
 	{
-		UE_LOG(LogTemp, Display, TEXT("%s: %s: Requested To Stop Custom Movement: %s"),
-			*FString(__FUNCTION__), 
-			GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()),
-			*PhysCustomMovement->MovementName.ToString());
-
 		PhysCustomMovement->EndMovement();
-		PhysCustomMovement.Reset();
 	}
+	
+	PhysCustomMovement.Reset();
 }
 
 bool UGSCharacterMovementComponent::IsPhysCustomMovementActive() const

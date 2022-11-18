@@ -25,13 +25,15 @@ USTRUCT()
 struct GASSHOOTER_API FPhysCustomMovement
 {
 	GENERATED_USTRUCT_BODY()
-		
-	/** Name of the custom movement. */
-	UPROPERTY()
-	FName MovementName;
 
+private:
 	// Selected custom movement mode flag: this will be set by the character movement component and must match the selected compressed flag
 	uint8 CustomModeFlag;
+
+public:
+	/** Name of the custom movement. */
+	UPROPERTY()
+	FName MovementName = NAME_None;
 
 	/** Time elapsed so far for this movement */
 	UPROPERTY()
@@ -56,26 +58,25 @@ struct GASSHOOTER_API FPhysCustomMovement
 		MaxSpeed = 999.f;
 		CurrentTime = 0.f;
 		bIsActive = false;
+		MovementName = NAME_None;
 	}
 
 	virtual ~FPhysCustomMovement() {}
 
 	virtual bool BeginMovement(ACharacter* inCharacter, UCharacterMovementComponent* inCharacterMovementComponent, const uint8 inCustomModeFlag)
 	{
-		bool bResult = false;
-
 		if (inCharacterMovementComponent)
 		{
+			CharacterMovementComponent = inCharacterMovementComponent;
 			CustomModeFlag = inCustomModeFlag;
 			CurrentTime = 0.f;
 			bIsActive = true;
-			CharacterMovementComponent = inCharacterMovementComponent;
 			CharacterMovementComponent->SetMovementMode(MOVE_Custom, CustomModeFlag);
 
-			bResult = true;
+			return true;
 		}
 
-		return bResult;
+		return false;
 	};
 
 	// end current movement; this is where you have a chance to clean up
@@ -97,6 +98,9 @@ struct GASSHOOTER_API FPhysCustomMovement
 		CurrentTime += deltaTime;
 
 		// Do your cool movement...
+		
+		// ... and don't forget to clamp to the maximum speed for the movement
+		outVelocity = outVelocity.GetClampedToMaxSize(GetMaxSpeed());
 	};
 
 	// overrides the maximum speed for this movement mode
@@ -106,7 +110,7 @@ struct GASSHOOTER_API FPhysCustomMovement
 	};
 
 	// return the custom movement mode flag that was reserved for this custom movement
-	virtual uint8 GetCustomModeFlag() const { return CustomModeFlag; };
+	uint8 GetCustomModeFlag() const { return CustomModeFlag; };
 
 	/** @return the CurrentTime - amount of time elapsed so far for this movement */
 	float GetTime() const { return CurrentTime; };
@@ -194,8 +198,8 @@ struct GASSHOOTER_API FPhysCustomMovement_JetPack : public FPhysCustomMovement
 {
 	GENERATED_USTRUCT_BODY()
 
-		UPROPERTY()
-		FVector BaseAcceleration;
+	UPROPERTY()
+	FVector BaseAcceleration;
 
 	FPhysCustomMovement_JetPack()
 	{
@@ -232,7 +236,7 @@ struct GASSHOOTER_API FPhysCustomMovement_Sprint : public FPhysCustomMovement
 {
 	GENERATED_USTRUCT_BODY()
 
-		FPhysCustomMovement_Sprint()
+	FPhysCustomMovement_Sprint()
 	{
 	};
 
