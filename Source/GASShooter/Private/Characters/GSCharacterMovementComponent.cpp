@@ -4,6 +4,8 @@
 #include "Characters/GSCharacterMovementComponent.h"
 #include "Characters/GSCharacterBase.h"
 
+DECLARE_CYCLE_STAT(TEXT("Char PhysCustom"), STAT_UGSCharacterMovementComponent_PhysCustom, STATGROUP_Character);
+
 UGSCharacterMovementComponent::UGSCharacterMovementComponent()
 {
 }
@@ -67,6 +69,9 @@ void UGSCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 	{
 		return;
 	}
+
+	SCOPED_NAMED_EVENT(UGSCharacterMovementComponent_PhysCustom, FColor::Yellow);
+	SCOPE_CYCLE_COUNTER(STAT_UGSCharacterMovementComponent_PhysCustom);
 
 	if (PhysCustomMovement.IsValid() && CustomMovementMode == GetPhysCustomMovementModeFlag())
 	{

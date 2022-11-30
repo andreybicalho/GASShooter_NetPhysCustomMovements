@@ -149,6 +149,8 @@ struct GASSHOOTER_API FPhysCustomMovement_Jump : public FPhysCustomMovement
 
 	virtual void UpdateMovement(const float deltaTime, const FVector& oldVelocity, FVector& outVelocity) override
 	{
+		SCOPED_NAMED_EVENT(FPhysCustomMovement_UpdateMovement_Jump, FColor::Yellow);
+
 		CurrentTime += deltaTime;
 
 		outVelocity = oldVelocity;
@@ -209,6 +211,8 @@ struct GASSHOOTER_API FPhysCustomMovement_JetPack : public FPhysCustomMovement
 
 	virtual void UpdateMovement(const float deltaTime, const FVector& oldVelocity, FVector& outVelocity) override
 	{
+		SCOPED_NAMED_EVENT(FPhysCustomMovement_UpdateMovement_JetPack, FColor::Yellow);
+
 		CurrentTime += deltaTime;
 
 		if (const ACharacter* character = CharacterMovementComponent->GetCharacterOwner())
@@ -244,6 +248,8 @@ struct GASSHOOTER_API FPhysCustomMovement_Sprint : public FPhysCustomMovement
 
 	virtual void UpdateMovement(const float deltaTime, const FVector& oldVelocity, FVector& outVelocity) override
 	{
+		SCOPED_NAMED_EVENT(FPhysCustomMovement_UpdateMovement_Sprint, FColor::Yellow);
+
 		CurrentTime += deltaTime;
 
 		if (CharacterMovementComponent)
@@ -294,6 +300,8 @@ struct GASSHOOTER_API FPhysCustomMovement_FollowPoints : public FPhysCustomMovem
 
 	virtual void UpdateMovement(const float deltaTime, const FVector& oldVelocity, FVector& outVelocity) override
 	{
+		SCOPED_NAMED_EVENT(FPhysCustomMovement_UpdateMovement_FollowPoints, FColor::Yellow);
+
 		CurrentTime += deltaTime;
 
 		if (CharacterMovementComponent)
