@@ -71,6 +71,7 @@ public:
 			CustomModeFlag = inCustomModeFlag;
 			CurrentTime = 0.f;
 			bIsActive = true;
+			CharacterMovementComponent->MaxCustomMovementSpeed = MaxSpeed;
 			CharacterMovementComponent->SetMovementMode(MOVE_Custom, CustomModeFlag);
 
 			return true;

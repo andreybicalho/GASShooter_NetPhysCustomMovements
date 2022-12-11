@@ -30,7 +30,7 @@ public:
 	virtual void PrepMoveFor(class ACharacter* Character) override;
 
 	// Any custom physics movement
-	uint8 SavedRequestToStartCustomMovement : 1;
+	uint8 bSavedWantsPhysCustomMovement : 1;
 };
 
 class FGSNetworkPredictionData_Client : public FNetworkPredictionData_Client_Character
@@ -60,7 +60,7 @@ class GASSHOOTER_API UGSCharacterMovementComponent : public UCharacterMovementCo
 public:
 	UGSCharacterMovementComponent();
 
-	uint8 RequestToStartPhysCustomMovement : 1;
+	uint8 bWantsPhysCustomMovement : 1;
 
 	virtual float GetMaxSpeed() const override;
 	virtual void UpdateFromCompressedFlags(uint8 Flags) override;
@@ -68,13 +68,13 @@ public:
 	virtual void PhysCustom(float deltaTime, int32 Iterations) override;
 
 	// Physics Custom Movement API
+	/** Starts the Phys Custom Movement. */
 	virtual bool StartPhysCustomMovement(TSharedPtr<FPhysCustomMovement> inPhysCustomMovement);
-	/** Stop the current Phys Custom Movement. NOTE: if you call this you MUST set the next movement mode manually (UCharacterMovementComponent::SetMovementMode). */
-	UFUNCTION(BlueprintCallable, Category = "Phys Custom Movement")
-	virtual void StopPhysCustomMovement();
+	/** Called when ending Phys Custom Movement from UCharacterMovementComponent::SetMovementMode. */
+	virtual void OnPhysCustomMovementEnd();
 	UFUNCTION(BlueprintCallable, Category = "Phys Custom Movement")
 	virtual bool IsPhysCustomMovementActive() const;
-	// NOTE: this MUST match the selected custom flag for the 'RequestToStartPhysCustomMovement' in FGSSavedMove::GetCompressedFlags
+	// NOTE: this MUST match the selected custom flag for the 'bWantsPhysCustomMovement' in FGSSavedMove::GetCompressedFlags
 	virtual uint8 GetPhysCustomMovementModeFlag() const;
 	// ~Physics Custom Movement API
 

@@ -3,6 +3,7 @@
 
 #include "Characters/GSCharacterMovementComponent.h"
 #include "Characters/GSCharacterBase.h"
+#include "GameFramework/PhysicsVolume.h"
 
 DECLARE_CYCLE_STAT(TEXT("Char PhysCustom"), STAT_UGSCharacterMovementComponent_PhysCustom, STATGROUP_Character);
 
@@ -24,10 +25,12 @@ float UGSCharacterMovementComponent::GetMaxSpeed() const
 		return 0.0f;
 	}
 
-	if (RequestToStartPhysCustomMovement && PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
+	// TODO: this only returns for Autonomous Proxy and Authority; since SimulatedProxies don't have a copy of the movement if we ever need that max speed we should replicate the max speed
+	if (bWantsPhysCustomMovement && PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
 	{
-		//UE_LOG(LogTemp, Display, TEXT("%s: %s"), *FString(__FUNCTION__), GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()));
-		return PhysCustomMovement->GetMaxSpeed();
+		//UE_LOG(LogTemp, Display, TEXT("%s: %s"), *FString(__FUNCTION__), GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()));
+		return MaxCustomMovementSpeed;
+		//return PhysCustomMovement->GetMaxSpeed();
 	}
 
 	return Owner->GetMoveSpeed();
@@ -41,7 +44,7 @@ void UGSCharacterMovementComponent::UpdateFromCompressedFlags(uint8 Flags)
 	//UpdateFromCompressed flags simply copies the flags from the saved move into the movement component.
 	//It basically just resets the movement component to the state when the move was made so it can simulate from there.
 
-	RequestToStartPhysCustomMovement = (Flags & GetPhysCustomMovementModeFlag()) != 0;
+	bWantsPhysCustomMovement = (Flags & GetPhysCustomMovementModeFlag()) != 0;
 }
 
 FNetworkPredictionData_Client* UGSCharacterMovementComponent::GetPredictionData_Client() const
@@ -65,7 +68,7 @@ void UGSCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 {
 	// Phys* functions should only run for characters with ROLE_Authority or ROLE_AutonomousProxy. However, Unreal calls PhysCustom in
 	// two separate locations, one of which doesn't check the role, so we must check it here to prevent this code from running on simulated proxies.
-	if (GetOwner()->GetLocalRole() == ROLE_SimulatedProxy)
+	if (GetOwner()->GetLocalRole() == ROLE_SimulatedProxy || deltaTime < MIN_TICK_TIME)
 	{
 		return;
 	}
@@ -73,42 +76,56 @@ void UGSCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 	SCOPED_NAMED_EVENT(UGSCharacterMovementComponent_PhysCustom, FColor::Yellow);
 	SCOPE_CYCLE_COUNTER(STAT_UGSCharacterMovementComponent_PhysCustom);
 
-	if (PhysCustomMovement.IsValid() && CustomMovementMode == GetPhysCustomMovementModeFlag())
+	if (CustomMovementMode == GetPhysCustomMovementModeFlag())
 	{
-		//UE_LOG(LogTemp, Display, TEXT("%s: %s"), *FString(__FUNCTION__), GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()));
-		if (!PhysCustomMovement->IsActive())
+		if (PhysCustomMovement.IsValid())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("%s: %s: Movement Mode is Set but is inactive. Requesting to stop it completely!"), *FString(__FUNCTION__), GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()));
-
-			StopPhysCustomMovement();
-			Super::PhysCustom(deltaTime, Iterations);
-			return;
-		}
-
-		if (PhysCustomMovement->CanDoMovement(deltaTime))
-		{
-			const FVector oldVelocity = Velocity;
-			PhysCustomMovement->UpdateMovement(deltaTime, oldVelocity, Velocity);
-
-			const FVector adjustedVelocity = Velocity * deltaTime;
-			const FVector oldLocation = UpdatedComponent->GetComponentLocation();
-			FHitResult hit(1.f);
-			SafeMoveUpdatedComponent(adjustedVelocity, UpdatedComponent->GetComponentQuat(), true, hit);
-
-			if (!bJustTeleported && !HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
+			//UE_LOG(LogTemp, Display, TEXT("%s: %s"), *FString(__FUNCTION__), GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()));
+			if (!PhysCustomMovement->IsActive())
 			{
-				Velocity = (UpdatedComponent->GetComponentLocation() - oldLocation) / deltaTime;
+				UE_LOG(LogTemp, Warning, TEXT("%s: %s: Movement Mode is valid but it is inactive. Movement mode will be set to Falling."), *FString(__FUNCTION__), GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()));
+
+				SetMovementMode(MOVE_Falling);
+				return;
+			}
+
+			if (PhysCustomMovement->CanDoMovement(deltaTime))
+			{
+				// TODO: we probably want to call CalcVelocity since it handles braking, friction, deceleration and also RVO stuff
+				/*const float friction = 0.5f * GetPhysicsVolume()->FluidFriction;
+				CalcVelocity(deltaTime, friction, true, GetMaxBrakingDeceleration());*/
+
+				const FVector oldVelocity = Velocity;
+				PhysCustomMovement->UpdateMovement(deltaTime, oldVelocity, Velocity);
+
+				const FVector adjustedVelocity = Velocity * deltaTime;
+				const FVector oldLocation = UpdatedComponent->GetComponentLocation();
+				FHitResult hit(1.f);
+				SafeMoveUpdatedComponent(adjustedVelocity, UpdatedComponent->GetComponentQuat(), true, hit);
+
+				if (!bJustTeleported && !HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
+				{
+					Velocity = (UpdatedComponent->GetComponentLocation() - oldLocation) / deltaTime;
+					UpdateComponentVelocity();
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("%s: %s: Phys Custom Movement requirements FAILED! Movement mode will be set to Falling."), *FString(__FUNCTION__), GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()));
+
+				SetMovementMode(MOVE_Falling);
 			}
 		}
 		else
 		{
+			UE_LOG(LogTemp, Warning, TEXT("%s: %s: Phys Custom Movement is not valid. Movement mode will be set to Falling."), *FString(__FUNCTION__), GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()));
+
 			SetMovementMode(MOVE_Falling);
 		}
 	}
 	else
 	{
-		StopPhysCustomMovement();
-		SetMovementMode(MOVE_Falling);
+		UE_LOG(LogTemp, Warning, TEXT("%s: %s: CustomMovementMode doesn't match our Phys Custom Movement Mode Flag. Are you sure you want to run another custom movement?"), *FString(__FUNCTION__), GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()));
 	}
 
 	// Not sure if this is needed
@@ -121,7 +138,7 @@ bool UGSCharacterMovementComponent::StartPhysCustomMovement(TSharedPtr<FPhysCust
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%s: %s: %s is still active. If you want to start %s, wait till that movement is done or manually stop it."),
 			*FString(__FUNCTION__),
-			GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()),
+			GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 			*PhysCustomMovement->MovementName.ToString(),
 			*inPhysCustomMovement->MovementName.ToString());
 
@@ -133,25 +150,25 @@ bool UGSCharacterMovementComponent::StartPhysCustomMovement(TSharedPtr<FPhysCust
 	if (inPhysCustomMovement.IsValid())
 	{
 		UE_LOG(LogTemp, Display, TEXT("%s: %s: Requested To Start Custom Movement: %s"),
-			*FString(__FUNCTION__), GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()),
+			*FString(__FUNCTION__), GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 			*PhysCustomMovement->MovementName.ToString());
 
-		RequestToStartPhysCustomMovement = PhysCustomMovement->BeginMovement(
+		bWantsPhysCustomMovement = PhysCustomMovement->BeginMovement(
 			GetCharacterOwner(),
 			this,
 			GetPhysCustomMovementModeFlag());
 	}
 
-	return RequestToStartPhysCustomMovement;
+	return bWantsPhysCustomMovement;
 }
 
-void UGSCharacterMovementComponent::StopPhysCustomMovement()
+void UGSCharacterMovementComponent::OnPhysCustomMovementEnd()
 {
-	RequestToStartPhysCustomMovement = false;
-	
+	bWantsPhysCustomMovement = false;
+
 	UE_LOG(LogTemp, Display, TEXT("%s: %s: Requested To Stop Custom Movement: %s"),
 		*FString(__FUNCTION__),
-		GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()),
+		GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 		PhysCustomMovement.IsValid() ? *PhysCustomMovement->MovementName.ToString() : TEXT("Invalid"));
 
 	if (PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
@@ -169,7 +186,7 @@ bool UGSCharacterMovementComponent::IsPhysCustomMovementActive() const
 
 uint8 UGSCharacterMovementComponent::GetPhysCustomMovementModeFlag() const
 {
-	// NOTE: this MUST match the selected custom flag for the 'RequestToStartPhysCustomMovement' in FGSSavedMove::GetCompressedFlags
+	// NOTE: this MUST match the selected custom flag for the 'bWantsPhysCustomMovement' in FGSSavedMove::GetCompressedFlags
 	return FGSSavedMove::FLAG_Custom_0;
 }
 
@@ -178,10 +195,21 @@ void UGSCharacterMovementComponent::OnMovementModeChanged(EMovementMode Previous
 {
 	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
 
-	if (PreviousMovementMode == MOVE_Custom && PreviousCustomMode == GetPhysCustomMovementModeFlag())
+	// NOTE: only Autonomous Proxy and Authority should stop the phys custom movement since only them has an instance of that
+	if (GetOwner()->GetLocalRole() >= ROLE_AutonomousProxy)
 	{
-		//UE_LOG(LogTemp, Display, TEXT("%s: %s"), *FString(__FUNCTION__), GET_ACTOR_ROLE_FSTRING(GetCharacterOwner()));
-		StopPhysCustomMovement();
+		// TODO: should check if we are changing from a phys custom movement to another phys custom movement?
+		if (PreviousMovementMode == MOVE_Custom && PreviousCustomMode == GetPhysCustomMovementModeFlag())
+		{
+			UE_LOG(LogTemp, Display, TEXT("%s: %s: Movement Mode Changed from %s to %s during Phys Custom Movement: %s. Requesting to Stop the Phys Custom Movement..."),
+				*FString(__FUNCTION__),
+				GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
+				*UEnum::GetValueAsString(PreviousMovementMode),
+				*UEnum::GetValueAsString(MovementMode),
+				PhysCustomMovement.IsValid() ? *PhysCustomMovement->MovementName.ToString() : TEXT("Invalid"));
+
+			OnPhysCustomMovementEnd();
+		}
 	}
 }
 
@@ -189,14 +217,14 @@ void FGSSavedMove::Clear()
 {
 	Super::Clear();
 
-	SavedRequestToStartCustomMovement = false;
+	bSavedWantsPhysCustomMovement = false;
 }
 
 uint8 FGSSavedMove::GetCompressedFlags() const
 {
 	uint8 Result = Super::GetCompressedFlags();
 
-	if (SavedRequestToStartCustomMovement)
+	if (bSavedWantsPhysCustomMovement)
 	{
 		Result |= FLAG_Custom_0;
 	}
@@ -208,7 +236,7 @@ bool FGSSavedMove::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* Char
 {
 	//Set which moves can be combined together. This will depend on the bit flags that are used.
 
-	if (SavedRequestToStartCustomMovement != ((FGSSavedMove*)NewMove.Get())->SavedRequestToStartCustomMovement)
+	if (bSavedWantsPhysCustomMovement != ((FGSSavedMove*)NewMove.Get())->bSavedWantsPhysCustomMovement)
 	{
 		return false;
 	}
@@ -224,7 +252,7 @@ void FGSSavedMove::SetMoveFor(ACharacter* Character, float InDeltaTime, FVector 
 	if (CharacterMovement)
 	{
 		// Copy values into the saved move
-		SavedRequestToStartCustomMovement = CharacterMovement->RequestToStartPhysCustomMovement;
+		bSavedWantsPhysCustomMovement = CharacterMovement->bWantsPhysCustomMovement;
 	}
 }
 
@@ -236,7 +264,7 @@ void FGSSavedMove::PrepMoveFor(ACharacter* Character)
 	if (CharacterMovement)
 	{
 		// Copy values out of the saved move
-		CharacterMovement->RequestToStartPhysCustomMovement = SavedRequestToStartCustomMovement;
+		CharacterMovement->bWantsPhysCustomMovement = bSavedWantsPhysCustomMovement;
 	}
 }
 
