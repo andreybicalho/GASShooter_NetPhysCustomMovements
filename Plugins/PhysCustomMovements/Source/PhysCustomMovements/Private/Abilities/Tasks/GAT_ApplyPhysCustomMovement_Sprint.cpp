@@ -1,19 +1,19 @@
 // Copyright 2022 Andrey Bicalho.
 
-
-#include "Characters/Abilities/AbilityTasks/GSAT_ApplyPhysCustomSprint.h"
-#include "Characters/GSCharacterMovementComponent.h"
+#include "Abilities/Tasks/GAT_ApplyPhysCustomMovement_Sprint.h"
+#include "Components/PMCharacterMovementComponent.h"
+#include "Movements/PhysCustomMovement_Sprint.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 
-UGSAT_ApplyPhysCustomSprint::UGSAT_ApplyPhysCustomSprint(const FObjectInitializer& ObjectInitializer)
+UGAT_ApplyPhysCustomMovement_Sprint::UGAT_ApplyPhysCustomMovement_Sprint(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 }
 
-UGSAT_ApplyPhysCustomSprint* UGSAT_ApplyPhysCustomSprint::PhysSprint(UGameplayAbility* OwningAbility, FName TaskInstanceName, float inMaxSpeed)
+UGAT_ApplyPhysCustomMovement_Sprint* UGAT_ApplyPhysCustomMovement_Sprint::PhysSprint(UGameplayAbility* OwningAbility, FName TaskInstanceName, float inMaxSpeed)
 {
-	UGSAT_ApplyPhysCustomSprint* abilityTask = NewAbilityTask<UGSAT_ApplyPhysCustomSprint>(OwningAbility, TaskInstanceName);
+	UGAT_ApplyPhysCustomMovement_Sprint* abilityTask = NewAbilityTask<UGAT_ApplyPhysCustomMovement_Sprint>(OwningAbility, TaskInstanceName);
 
 	if (abilityTask)
 	{
@@ -27,13 +27,13 @@ UGSAT_ApplyPhysCustomSprint* UGSAT_ApplyPhysCustomSprint::PhysSprint(UGameplayAb
 	return nullptr;
 }
 
-void UGSAT_ApplyPhysCustomSprint::InitAndApply()
+void UGAT_ApplyPhysCustomMovement_Sprint::InitAndApply()
 {
 	if (AbilitySystemComponent->AbilityActorInfo->MovementComponent.IsValid())
 	{
-		CharacterMovementComponent = Cast<UGSCharacterMovementComponent>(AbilitySystemComponent->AbilityActorInfo->MovementComponent.Get());
+		CharacterMovementComponent = Cast<UPMCharacterMovementComponent>(AbilitySystemComponent->AbilityActorInfo->MovementComponent.Get());
 
-		if (CharacterMovementComponent)
+		if (CharacterMovementComponent.IsValid())
 		{
 			TSharedPtr<FPhysCustomMovement_Sprint> movement = MakeShared<FPhysCustomMovement_Sprint>();
 
@@ -47,4 +47,3 @@ void UGSAT_ApplyPhysCustomSprint::InitAndApply()
 		}
 	}
 }
-

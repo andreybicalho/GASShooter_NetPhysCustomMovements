@@ -4,10 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/Tasks/AbilityTask.h"
-#include "Characters/PhysCustomMovement.h"
-#include "GSAT_ApplyPhysCustomMovementBase.generated.h"
+#include "Movements/PhysCustomMovement.h"
+#include "GAT_ApplyPhysCustomMovementBase.generated.h"
 
-class UGSCharacterMovementComponent;
+class UPMCharacterMovementComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FApplyPhysCustomMovementDelegate);
 
@@ -15,7 +15,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FApplyPhysCustomMovementDelegate);
  * Base class for ability tasks that apply Physics Custom Movements, providing basic functionality to manage the custom movement.
  */
 UCLASS()
-class GASSHOOTER_API UGSAT_ApplyPhysCustomMovementBase : public UAbilityTask
+class PHYSCUSTOMMOVEMENTS_API UGAT_ApplyPhysCustomMovementBase : public UAbilityTask
 {
 	GENERATED_BODY()
 
@@ -30,8 +30,7 @@ public:
 	FApplyPhysCustomMovementDelegate OnFailed;
 
 protected:
-	UPROPERTY()
-	UGSCharacterMovementComponent* CharacterMovementComponent = nullptr;
+	TWeakObjectPtr<UPMCharacterMovementComponent> CharacterMovementComponent = nullptr;
 
 	FName CustomMovementName;
 
@@ -42,11 +41,11 @@ protected:
 	bool bActivated = false;
 
 public:
-	UGSAT_ApplyPhysCustomMovementBase(const FObjectInitializer& ObjectInitializer);
+	UGAT_ApplyPhysCustomMovementBase(const FObjectInitializer& ObjectInitializer);
 
 	virtual void OnDestroy(bool AbilityIsEnding) override;
 
-	UFUNCTION(BlueprintCallable, Category = "Ability|Tasks|PhysCustomMovement")
+	UFUNCTION(BlueprintCallable, Category = "PhysCustomMovement|Abilities|Tasks")
 	virtual void Finish();
 
 protected:

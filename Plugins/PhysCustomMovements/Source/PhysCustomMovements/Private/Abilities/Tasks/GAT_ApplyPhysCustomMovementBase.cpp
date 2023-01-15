@@ -1,20 +1,19 @@
 // Copyright 2022 Andrey Bicalho.
 
 
-#include "Characters/Abilities/AbilityTasks/GSAT_ApplyPhysCustomMovementBase.h"
-#include "Characters/GSCharacterMovementComponent.h"
-#include "GASShooter/GASShooter.h"
+#include "Abilities/Tasks/GAT_ApplyPhysCustomMovementBase.h"
+#include "Components/PMCharacterMovementComponent.h"
 
-UGSAT_ApplyPhysCustomMovementBase::UGSAT_ApplyPhysCustomMovementBase(const FObjectInitializer& ObjectInitializer)
+UGAT_ApplyPhysCustomMovementBase::UGAT_ApplyPhysCustomMovementBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	bTickingTask = false;
 	CustomMovementName = FName(NAME_None);
 }
 
-void UGSAT_ApplyPhysCustomMovementBase::OnPhysCustomMovementEnded()
+void UGAT_ApplyPhysCustomMovementBase::OnPhysCustomMovementEnded()
 {
-	UE_LOG(LogTemp, Display, TEXT("%s: %s: Phys Custom Movement %s has finished on ability task %s"),
+	UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: Phys Custom Movement %s has finished on ability task %s"),
 		ANSI_TO_TCHAR(__FUNCTION__),
 		GET_ACTOR_LOCAL_ROLE_FSTRING(GetAvatarActor()),
 		PhysCustomMovement.IsValid() ? *PhysCustomMovement->MovementName.ToString() : TEXT("Invalid"),
@@ -23,7 +22,7 @@ void UGSAT_ApplyPhysCustomMovementBase::OnPhysCustomMovementEnded()
 	Finish();
 }
 
-void UGSAT_ApplyPhysCustomMovementBase::Activate()
+void UGAT_ApplyPhysCustomMovementBase::Activate()
 {
 	Super::Activate();
 
@@ -50,7 +49,7 @@ void UGSAT_ApplyPhysCustomMovementBase::Activate()
 	}
 }
 
-void UGSAT_ApplyPhysCustomMovementBase::Finish()
+void UGAT_ApplyPhysCustomMovementBase::Finish()
 {
 	if (PhysCustomMovement.IsValid() && PhysCustomMovement->OnCustomMovementEnd.IsBound())
 	{
@@ -65,7 +64,7 @@ void UGSAT_ApplyPhysCustomMovementBase::Finish()
 	EndTask();
 }
 
-void UGSAT_ApplyPhysCustomMovementBase::OnDestroy(bool AbilityIsEnding)
+void UGAT_ApplyPhysCustomMovementBase::OnDestroy(bool AbilityIsEnding)
 {
 	if (PhysCustomMovement.IsValid() && PhysCustomMovement->OnCustomMovementEnd.IsBound())
 	{
@@ -74,13 +73,13 @@ void UGSAT_ApplyPhysCustomMovementBase::OnDestroy(bool AbilityIsEnding)
 
 	if (PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s: %s: Ability Task %s is being destroyed, but Phys Custom Movement %s is still valid and active. Movement mode will be set to Falling."),
+		UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: Ability Task %s is being destroyed, but Phys Custom Movement %s is still valid and active. Movement mode will be set to Falling."),
 			ANSI_TO_TCHAR(__FUNCTION__),
 			GET_ACTOR_LOCAL_ROLE_FSTRING(GetAvatarActor()),
 			*CustomMovementName.ToString(),
 			*PhysCustomMovement->MovementName.ToString());
 
-		if (CharacterMovementComponent)
+		if (CharacterMovementComponent.IsValid())
 		{
 			CharacterMovementComponent->SetMovementMode(MOVE_Falling);
 		}

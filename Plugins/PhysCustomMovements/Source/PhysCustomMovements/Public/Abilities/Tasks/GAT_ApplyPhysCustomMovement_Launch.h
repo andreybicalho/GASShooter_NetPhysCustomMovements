@@ -3,14 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Characters/Abilities/AbilityTasks/GSAT_ApplyPhysCustomMovementBase.h"
-#include "GSAT_ApplyPhysCustomJump.generated.h"
+#include "Abilities/Tasks/GAT_ApplyPhysCustomMovementBase.h"
+#include "GAT_ApplyPhysCustomMovement_Launch.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class GASSHOOTER_API UGSAT_ApplyPhysCustomJump : public UGSAT_ApplyPhysCustomMovementBase
+class PHYSCUSTOMMOVEMENTS_API UGAT_ApplyPhysCustomMovement_Launch : public UGAT_ApplyPhysCustomMovementBase
 {
 	GENERATED_BODY()
 		
@@ -21,11 +21,11 @@ class GASSHOOTER_API UGSAT_ApplyPhysCustomJump : public UGSAT_ApplyPhysCustomMov
 	bool bZOverride = false;
 
 public:
-	UGSAT_ApplyPhysCustomJump(const FObjectInitializer& ObjectInitializer);
+	UGAT_ApplyPhysCustomMovement_Launch(const FObjectInitializer& ObjectInitializer);
 
-	/** Apply jump to character's movement */
+	/** Launch Character with velocity. */
 	UFUNCTION(BlueprintCallable, Category = "Ability|Tasks", meta = (HidePin = "OwningAbility", DefaultToSelf = "OwningAbility", BlueprintInternalUseOnly = "TRUE"))
-	static UGSAT_ApplyPhysCustomJump* PhysJump(UGameplayAbility* OwningAbility, FName TaskInstanceName,
+	static UGAT_ApplyPhysCustomMovement_Launch* PhysLaunch(UGameplayAbility* OwningAbility, FName TaskInstanceName,
 												const FVector& inLaunchVelocity, bool bInXYOverride, bool bInZOverride, float inMaxSpeed);
 
 protected:

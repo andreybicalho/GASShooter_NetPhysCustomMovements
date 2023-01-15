@@ -3,27 +3,26 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Characters/Abilities/AbilityTasks/GSAT_ApplyPhysCustomMovementBase.h"
-#include "GSAT_ApplyPhysCustomFollowPoints.generated.h"
+#include "Abilities/Tasks/GAT_ApplyPhysCustomMovementBase.h"
+#include "GAT_ApplyPhysCustomMovement_MoveToPoints.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class GASSHOOTER_API UGSAT_ApplyPhysCustomFollowPoints : public UGSAT_ApplyPhysCustomMovementBase
+class PHYSCUSTOMMOVEMENTS_API UGAT_ApplyPhysCustomMovement_MoveToPoints : public UGAT_ApplyPhysCustomMovementBase
 {
 	GENERATED_BODY()
 	
-
 	TArray<FVector> PathPoints = {};
 
 	float ConsumePointDistanceThreshold = 50.f;
 
 public:
-	UGSAT_ApplyPhysCustomFollowPoints(const FObjectInitializer& ObjectInitializer);
+	UGAT_ApplyPhysCustomMovement_MoveToPoints(const FObjectInitializer& ObjectInitializer);
 
 	UFUNCTION(BlueprintCallable, Category = "Ability|Tasks", meta = (HidePin = "OwningAbility", DefaultToSelf = "OwningAbility", BlueprintInternalUseOnly = "TRUE"))
-	static UGSAT_ApplyPhysCustomFollowPoints* PhysFollowPoints(UGameplayAbility* OwningAbility, FName TaskInstanceName,
+	static UGAT_ApplyPhysCustomMovement_MoveToPoints* PhysMoveToPoints(UGameplayAbility* OwningAbility, FName TaskInstanceName,
 			const TArray<FVector>& inPathPoints, float inConsumePointDistanceThreshold = 100.f, float inMaxSpeed = 900);
 
 protected:
