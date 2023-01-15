@@ -3,6 +3,7 @@
 
 #include "Components/PMCharacterMovementComponent.h"
 #include "GameFramework/Character.h"
+//#include "Movements/PhysCustomMovement_NonDeterministicMove.h" // TODO: remove this when figure out how to bind non predicted data dynamically
 
 DEFINE_LOG_CATEGORY(LogPhysCustomMovement);
 
@@ -30,16 +31,25 @@ void UPMCharacterMovementComponent::UpdateFromCompressedFlags(uint8 Flags)
 {
 	Super::UpdateFromCompressedFlags(Flags);
 
+	//This is called on the server when processing a move with a given timestamp.
 	//The Flags parameter contains the compressed input flags that are stored in the saved move.
 	//UpdateFromCompressed flags simply copies the flags from the saved move into the movement component.
 	//It basically just resets the movement component to the state when the move was made so it can simulate from there.
 
 	bWantsPhysCustomMovement = (Flags & GetPhysCustomMovementModeFlag()) != 0;
+
+	/*UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s"),
+		*FString(__FUNCTION__),
+		GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()));*/
 }
 
 FNetworkPredictionData_Client* UPMCharacterMovementComponent::GetPredictionData_Client() const
 {
 	check(PawnOwner != NULL);
+
+	/*UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s"),
+		*FString(__FUNCTION__),
+		GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()));*/
 
 	if (!ClientPredictionData)
 	{
@@ -52,7 +62,6 @@ FNetworkPredictionData_Client* UPMCharacterMovementComponent::GetPredictionData_
 
 	return ClientPredictionData;
 }
-
 
 void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
 {
@@ -238,6 +247,10 @@ void FPMSavedMove::Clear()
 	Super::Clear();
 
 	bSavedWantsPhysCustomMovement = false;
+
+	// TODO: should clear non predicted data here?
+	/*waitTime = 99.f;
+	movementDirectionSign = 1.f;*/
 }
 
 uint8 FPMSavedMove::GetCompressedFlags() const
@@ -256,12 +269,34 @@ bool FPMSavedMove::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* Char
 {
 	//Set which moves can be combined together. This will depend on the bit flags that are used.
 
+	UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: bSavedWantsPhysCustomMovement = %d / SavedMove->bSavedWantsPhysCustomMovement %d"),
+		*FString(__FUNCTION__),
+		GET_ACTOR_LOCAL_ROLE_FSTRING(Character), 
+		bSavedWantsPhysCustomMovement,
+		((FPMSavedMove*)NewMove.Get())->bSavedWantsPhysCustomMovement);
+
 	if (bSavedWantsPhysCustomMovement != ((FPMSavedMove*)NewMove.Get())->bSavedWantsPhysCustomMovement)
 	{
 		return false;
 	}
 
 	// TODO: should check for non predicted data?
+	/*if (UPMCharacterMovementComponent* characterMovement = Cast<UPMCharacterMovementComponent>(Character->GetCharacterMovement()))
+	{
+		if (auto movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(characterMovement->PhysCustomMovement.Get()))
+		{
+			UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: waitTime = %.2f --- movementDirectionSign = %.2f (%.2f, %.2f)"),
+				*FString(__FUNCTION__),
+				GET_ACTOR_LOCAL_ROLE_FSTRING(Character),
+				movement->TimeToWait,
+				movement->MovementDirectionSign,
+				((FPMSavedMove*)NewMove.Get())->waitTime,
+				((FPMSavedMove*)NewMove.Get())->movementDirectionSign);
+
+			return FMath::IsNearlyEqual(movement->TimeToWait, ((FPMSavedMove*)NewMove.Get())->waitTime, KINDA_SMALL_NUMBER)
+				&& FMath::IsNearlyEqual(movement->MovementDirectionSign, ((FPMSavedMove*)NewMove.Get())->movementDirectionSign, KINDA_SMALL_NUMBER);
+		}
+	}*/
 
 	return Super::CanCombineWith(NewMove, Character, MaxDelta);
 }
@@ -270,13 +305,23 @@ void FPMSavedMove::SetMoveFor(ACharacter* Character, float InDeltaTime, FVector 
 {
 	Super::SetMoveFor(Character, InDeltaTime, NewAccel, ClientData);
 
-	UPMCharacterMovementComponent* CharacterMovement = Cast<UPMCharacterMovementComponent>(Character->GetCharacterMovement());
-	if (CharacterMovement)
+	if (UPMCharacterMovementComponent* characterMovement = Cast<UPMCharacterMovementComponent>(Character->GetCharacterMovement()))
 	{
 		// Copy values into the saved move
-		bSavedWantsPhysCustomMovement = CharacterMovement->bWantsPhysCustomMovement;
+		bSavedWantsPhysCustomMovement = characterMovement->bWantsPhysCustomMovement;
 
-		// TODO: should set non predicted values here or create another API to bind those?
+		// TODO: should set non deterministic data here as well?
+		//if (auto movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(characterMovement->PhysCustomMovement.Get()))
+		//{
+		//	/*UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: waitTime = %.2f --- movementDirectionSign = %.2f"),
+		//		*FString(__FUNCTION__),
+		//		GET_ACTOR_LOCAL_ROLE_FSTRING(Character),
+		//		movement->TimeToWait,
+		//		movement->MovementDirectionSign);*/
+
+		//	waitTime = movement->TimeToWait;
+		//	movementDirectionSign = movement->MovementDirectionSign;
+		//}
 	}
 }
 
@@ -284,13 +329,23 @@ void FPMSavedMove::PrepMoveFor(ACharacter* Character)
 {
 	Super::PrepMoveFor(Character);
 
-	UPMCharacterMovementComponent* CharacterMovement = Cast<UPMCharacterMovementComponent>(Character->GetCharacterMovement());
-	if (CharacterMovement)
+ 	if (UPMCharacterMovementComponent* characterMovement = Cast<UPMCharacterMovementComponent>(Character->GetCharacterMovement()))
 	{
 		// Copy values out of the saved move
-		CharacterMovement->bWantsPhysCustomMovement = bSavedWantsPhysCustomMovement;
+		characterMovement->bWantsPhysCustomMovement = bSavedWantsPhysCustomMovement;
 
-		// TODO: apply non predicted values here
+		// TODO: should apply non predicted values here?
+		//if (auto movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(characterMovement->PhysCustomMovement.Get()))
+		//{
+		//	/*UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: waitTime = %.2f --- movementDirectionSign = %.2f"),
+		//		*FString(__FUNCTION__),
+		//		GET_ACTOR_LOCAL_ROLE_FSTRING(Character),
+		//		movement->TimeToWait,
+		//		movement->MovementDirectionSign);*/
+
+		//	movement->TimeToWait = waitTime;
+		//	movement->MovementDirectionSign = movementDirectionSign;
+		//}
 	}
 }
 

@@ -36,10 +36,16 @@ public:
 	uint8 bSavedWantsPhysCustomMovement : 1;
 
 	// TODO: replicate other unpredicted data... idea: add maps for binding basic types such as bool, int32, float, FVector, FRotator
+	/*float waitTime = 99.f;
+	float movementDirectionSign = 1.f;*/
 };
 
 class FPMNetworkPredictionData_Client : public FNetworkPredictionData_Client_Character
 {
+
+public:
+	FPhysCustomMovement PhysCustomMovement;
+
 public:
 	FPMNetworkPredictionData_Client(const UCharacterMovementComponent& ClientMovement);
 
@@ -59,9 +65,8 @@ class PHYSCUSTOMMOVEMENTS_API UPMCharacterMovementComponent : public UCharacterM
 	
 	friend class FPMSavedMove;
 
-	TSharedPtr<FPhysCustomMovement> PhysCustomMovement;
-
 public:
+	TSharedPtr<FPhysCustomMovement> PhysCustomMovement;
 	uint8 bWantsPhysCustomMovement : 1;
 
 public:
