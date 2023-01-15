@@ -5,7 +5,6 @@
 #include "Components/PMCharacterMovementComponent.h"
 #include "Movements/PhysCustomMovement_ConstantForce.h"
 #include "AbilitySystemComponent.h"
-#include "AbilitySystemGlobals.h"
 
 UGAT_ApplyPhysCustomMovement_ConstantForce::UGAT_ApplyPhysCustomMovement_ConstantForce(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

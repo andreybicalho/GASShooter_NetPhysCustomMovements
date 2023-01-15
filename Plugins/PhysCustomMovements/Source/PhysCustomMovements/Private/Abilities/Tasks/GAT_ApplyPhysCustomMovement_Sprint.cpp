@@ -4,7 +4,6 @@
 #include "Components/PMCharacterMovementComponent.h"
 #include "Movements/PhysCustomMovement_Sprint.h"
 #include "AbilitySystemComponent.h"
-#include "AbilitySystemGlobals.h"
 
 UGAT_ApplyPhysCustomMovement_Sprint::UGAT_ApplyPhysCustomMovement_Sprint(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

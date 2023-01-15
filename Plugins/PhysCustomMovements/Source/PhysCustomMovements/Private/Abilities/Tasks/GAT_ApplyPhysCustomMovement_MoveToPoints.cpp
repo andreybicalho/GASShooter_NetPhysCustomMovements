@@ -4,7 +4,6 @@
 #include "Components/PMCharacterMovementComponent.h"
 #include "Movements/PhysCustomMovement_MoveToPoints.h"
 #include "AbilitySystemComponent.h"
-#include "AbilitySystemGlobals.h"
 
 UGAT_ApplyPhysCustomMovement_MoveToPoints::UGAT_ApplyPhysCustomMovement_MoveToPoints(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
