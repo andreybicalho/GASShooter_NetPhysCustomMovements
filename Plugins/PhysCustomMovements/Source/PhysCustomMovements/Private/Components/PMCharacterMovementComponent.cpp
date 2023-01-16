@@ -1,6 +1,5 @@
 // Copyright 2022 Andrey Bicalho.
 
-
 #include "Components/PMCharacterMovementComponent.h"
 #include "GameFramework/Character.h"
 
@@ -14,13 +13,12 @@ UPMCharacterMovementComponent::UPMCharacterMovementComponent()
 
 float UPMCharacterMovementComponent::GetMaxSpeed() const
 {
-	// TODO: this only returns for Autonomous Proxy and Authority.
-	// since SimulatedProxies don't have a copy of the movement if we ever need that max speed we should replicate the max speed
+	// NOTE: this only returns for Autonomous Proxy and Authority.
+	// since SimulatedProxies don't have a copy of the movement if we ever need the max speed for them we should replicate or change design so they also run movement.
 	if (bWantsPhysCustomMovement && PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
 	{
-		//UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s"), *FString(__FUNCTION__), GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()));
 		return MaxCustomMovementSpeed;
-		//return PhysCustomMovement->GetMaxSpeed();
+		//return PhysCustomMovement->GetMaxSpeed(); // NOTE: equivalent to the above since we also set MaxCustomMovementSpeed during custom movement execution.
 	}
 
 	return Super::GetMaxSpeed();
@@ -84,7 +82,6 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 	{
 		if (PhysCustomMovement.IsValid())
 		{
-			//UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s"), *FString(__FUNCTION__), GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()));
 			if (!PhysCustomMovement->IsActive())
 			{
 				// TODO: check if this is even reachable with the new flow
@@ -94,16 +91,19 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 					*UEnum::GetValueAsString(PhysCustomMovement->FallbackMovementMode));
 
 				SetMovementMode(PhysCustomMovement->FallbackMovementMode);
-				StartNewPhysics(deltaTime, Iterations); // TODO: check this
+				StartNewPhysics(deltaTime, Iterations);
 				return;
 			}
 
 			if (PhysCustomMovement->CanDoMovement(deltaTime))
 			{
+				// TODO: should only update velocity if we didn't teleport and if we don't have any root motion source?				
+				//if (!bJustTeleported && !HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
+							
 				const FVector oldVelocity = Velocity;
 				PhysCustomMovement->UpdateMovement(deltaTime, oldVelocity, Velocity);
 
-				// TODO: we probably want to call CalcVelocity since it handles braking, friction, deceleration and also RVO stuff (although RVO only works for walking and navwalking modes)
+				// TODO: we probably want to call take into account things like braking, friction, deceleration and also RVO stuff (although RVO only works for walking and navwalking modes) check CalcVelocity usage:
 				/*const float friction = 0.5f * GetPhysicsVolume()->FluidFriction;
 				CalcVelocity(deltaTime, friction, true, GetMaxBrakingDeceleration());*/
 
@@ -112,12 +112,14 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 				FHitResult hit(1.f);
 				SafeMoveUpdatedComponent(adjustedVelocity, UpdatedComponent->GetComponentQuat(), true, hit);
 
-				if (!bJustTeleported && !HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
-				{
-					// update velocity with what we really moved
-					Velocity = (UpdatedComponent->GetComponentLocation() - oldLocation) / deltaTime;  
-					UpdateComponentVelocity();
-				}
+				// update velocity with what we really moved
+				Velocity = (UpdatedComponent->GetComponentLocation() - oldLocation) / deltaTime;
+				UpdateComponentVelocity();
+
+				// update acceleration
+				Acceleration = Velocity.GetSafeNormal() * GetMaxAcceleration();
+				Acceleration = Acceleration.GetClampedToMaxSize(GetMaxAcceleration());
+				AnalogInputModifier = ComputeAnalogInputModifier();
 			}
 			else
 			{
@@ -128,7 +130,7 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 					*UEnum::GetValueAsString(PhysCustomMovement->FallbackMovementMode));
 
 				SetMovementMode(PhysCustomMovement->FallbackMovementMode);
-				StartNewPhysics(deltaTime, Iterations); // TODO: check this
+				StartNewPhysics(deltaTime, Iterations);
 			}
 		}
 		else
@@ -138,7 +140,7 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 				GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()));
 
 			SetMovementMode(MOVE_Falling);
-			StartNewPhysics(deltaTime, Iterations); // TODO: check this
+			StartNewPhysics(deltaTime, Iterations);
 		}
 	}
 	else
@@ -261,8 +263,6 @@ bool FPMSavedMove::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* Char
 		return false;
 	}
 
-	// TODO: should check for non predicted data?
-
 	return Super::CanCombineWith(NewMove, Character, MaxDelta);
 }
 
@@ -275,8 +275,6 @@ void FPMSavedMove::SetMoveFor(ACharacter* Character, float InDeltaTime, FVector 
 	{
 		// Copy values into the saved move
 		bSavedWantsPhysCustomMovement = CharacterMovement->bWantsPhysCustomMovement;
-
-		// TODO: should set non predicted values here or create another API to bind those?
 	}
 }
 
@@ -289,8 +287,6 @@ void FPMSavedMove::PrepMoveFor(ACharacter* Character)
 	{
 		// Copy values out of the saved move
 		CharacterMovement->bWantsPhysCustomMovement = bSavedWantsPhysCustomMovement;
-
-		// TODO: apply non predicted values here
 	}
 }
 
