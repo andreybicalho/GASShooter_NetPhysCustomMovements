@@ -2,14 +2,16 @@
 
 #include "Components/PMCharacterMovementComponent.h"
 #include "GameFramework/Character.h"
-//#include "Movements/PhysCustomMovement_NonDeterministicMove.h" // TODO: remove this when figure out how to bind non predicted data dynamically
+#include "Movements/PhysCustomMovement_NonDeterministicMove.h" // TODO: remove this when figure out how to bind non predicted data dynamically
 
 DEFINE_LOG_CATEGORY(LogPhysCustomMovement);
 
 DECLARE_CYCLE_STAT(TEXT("Char PhysCustom"), STAT_UPMCharacterMovementComponent_PhysCustom, STATGROUP_Character);
 
-UPMCharacterMovementComponent::UPMCharacterMovementComponent()
+UPMCharacterMovementComponent::UPMCharacterMovementComponent(const FObjectInitializer& ObjectInitializer) 
+	: UCharacterMovementComponent(ObjectInitializer)
 {
+	SetNetworkMoveDataContainer(CustomCharacterNetworkMoveDataContainer);
 }
 
 float UPMCharacterMovementComponent::GetMaxSpeed() const
@@ -126,14 +128,7 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 				UpdateComponentVelocity();
 
 				// update acceleration
-				if (Acceleration.SizeSquared() > SMALL_NUMBER)
-				{
-					Acceleration = Acceleration.GetSafeNormal() * GetMaxAcceleration();
-				}
-				else
-				{
-					Acceleration = GetMaxAcceleration() * (Velocity.SizeSquared() < SMALL_NUMBER ? UpdatedComponent->GetForwardVector() : Velocity.GetSafeNormal());
-				}
+				Acceleration = GetMaxAcceleration() * Velocity.GetSafeNormal();
 
 				AnalogInputModifier = ComputeAnalogInputModifier(); // recompute since acceleration may have changed.
 			}
@@ -229,7 +224,6 @@ uint8 UPMCharacterMovementComponent::GetPhysCustomMovementModeFlag() const
 	return FPMSavedMove::FLAG_Custom_0;
 }
 
-
 void UPMCharacterMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
 {
 	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
@@ -259,8 +253,9 @@ void FPMSavedMove::Clear()
 	bSavedWantsPhysCustomMovement = false;
 
 	// TODO: should clear non predicted data here?
-	/*waitTime = 99.f;
-	movementDirectionSign = 1.f;*/
+	waitTime = 99.f;
+	movementDirectionSign = 1.f;
+	elapsedTime = 0.f;
 }
 
 uint8 FPMSavedMove::GetCompressedFlags() const
@@ -291,7 +286,7 @@ bool FPMSavedMove::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* Char
 	}
 
 	// TODO: should check for non predicted data?
-	/*if (UPMCharacterMovementComponent* characterMovement = Cast<UPMCharacterMovementComponent>(Character->GetCharacterMovement()))
+	if (UPMCharacterMovementComponent* characterMovement = Cast<UPMCharacterMovementComponent>(Character->GetCharacterMovement()))
 	{
 		if (auto movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(characterMovement->PhysCustomMovement.Get()))
 		{
@@ -303,10 +298,12 @@ bool FPMSavedMove::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* Char
 				((FPMSavedMove*)NewMove.Get())->waitTime,
 				((FPMSavedMove*)NewMove.Get())->movementDirectionSign);
 
+
+			// TODO: how to dynamically check these? 
 			return FMath::IsNearlyEqual(movement->TimeToWait, ((FPMSavedMove*)NewMove.Get())->waitTime, KINDA_SMALL_NUMBER)
 				&& FMath::IsNearlyEqual(movement->MovementDirectionSign, ((FPMSavedMove*)NewMove.Get())->movementDirectionSign, KINDA_SMALL_NUMBER);
 		}
-	}*/
+	}
 
 	return Super::CanCombineWith(NewMove, Character, MaxDelta);
 }
@@ -321,17 +318,19 @@ void FPMSavedMove::SetMoveFor(ACharacter* Character, float InDeltaTime, FVector 
 		bSavedWantsPhysCustomMovement = characterMovement->bWantsPhysCustomMovement;
 
 		// TODO: should set non deterministic data here as well?
-		//if (auto movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(characterMovement->PhysCustomMovement.Get()))
-		//{
-		//	/*UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: waitTime = %.2f --- movementDirectionSign = %.2f"),
-		//		*FString(__FUNCTION__),
-		//		GET_ACTOR_LOCAL_ROLE_FSTRING(Character),
-		//		movement->TimeToWait,
-		//		movement->MovementDirectionSign);*/
+		if (auto movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(characterMovement->PhysCustomMovement.Get()))
+		{
+			/*UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: waitTime = %.2f --- movementDirectionSign = %.2f"),
+				*FString(__FUNCTION__),
+				GET_ACTOR_LOCAL_ROLE_FSTRING(Character),
+				movement->TimeToWait,
+				movement->MovementDirectionSign);*/
 
-		//	waitTime = movement->TimeToWait;
-		//	movementDirectionSign = movement->MovementDirectionSign;
-		//}
+			// TODO: how to dynamically set these??
+			waitTime = movement->TimeToWait;
+			movementDirectionSign = movement->MovementDirectionSign;
+			elapsedTime = movement->ElapsedTime;
+		}
 	}
 }
 
@@ -339,23 +338,28 @@ void FPMSavedMove::PrepMoveFor(ACharacter* Character)
 {
 	Super::PrepMoveFor(Character);
 
+	// This is used to copy state from the saved move to the character movement component. 
+	// This is ONLY used for predictive corrections, the actual data must be sent through RPC.
+
  	if (UPMCharacterMovementComponent* characterMovement = Cast<UPMCharacterMovementComponent>(Character->GetCharacterMovement()))
 	{
 		// Copy values out of the saved move
 		characterMovement->bWantsPhysCustomMovement = bSavedWantsPhysCustomMovement;
 
 		// TODO: should apply non predicted values here?
-		//if (auto movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(characterMovement->PhysCustomMovement.Get()))
-		//{
-		//	/*UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: waitTime = %.2f --- movementDirectionSign = %.2f"),
-		//		*FString(__FUNCTION__),
-		//		GET_ACTOR_LOCAL_ROLE_FSTRING(Character),
-		//		movement->TimeToWait,
-		//		movement->MovementDirectionSign);*/
+		if (auto movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(characterMovement->PhysCustomMovement.Get()))
+		{
+			/*UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: waitTime = %.2f --- movementDirectionSign = %.2f"),
+				*FString(__FUNCTION__),
+				GET_ACTOR_LOCAL_ROLE_FSTRING(Character),
+				movement->TimeToWait,
+				movement->MovementDirectionSign);*/
 
-		//	movement->TimeToWait = waitTime;
-		//	movement->MovementDirectionSign = movementDirectionSign;
-		//}
+			// TODO: how to dynamically set these??
+			movement->TimeToWait = waitTime;
+			movement->MovementDirectionSign = movementDirectionSign;
+			movement->ElapsedTime = elapsedTime;
+		}
 	}
 }
 
@@ -367,4 +371,36 @@ FPMNetworkPredictionData_Client::FPMNetworkPredictionData_Client(const UCharacte
 FSavedMovePtr FPMNetworkPredictionData_Client::AllocateNewMove()
 {
 	return FSavedMovePtr(new FPMSavedMove());
+}
+// 
+FPMCharacterNetworkMoveDataContainer::FPMCharacterNetworkMoveDataContainer() : Super()
+{
+	NewMoveData = &CustomDefaultMoveData[0];
+	PendingMoveData = &CustomDefaultMoveData[1];
+	OldMoveData = &CustomDefaultMoveData[2];
+}
+
+//Sends the Movement Data 
+bool FPMCharacterNetworkMoveData::Serialize(UCharacterMovementComponent& CharacterMovement, FArchive& Ar, UPackageMap* PackageMap, ENetworkMoveType MoveType)
+{
+	Super::Serialize(CharacterMovement, Ar, PackageMap, MoveType);
+
+	// TODO: how to dynamically serialize these??
+	SerializeOptionalValue<float>(Ar.IsSaving(), Ar, WaitTime, 0.f);
+	SerializeOptionalValue<float>(Ar.IsSaving(), Ar, MovementDirectionSign, 1.f);
+	SerializeOptionalValue<float>(Ar.IsSaving(), Ar, ElapsedTime, 0.f);
+
+	return !Ar.IsError();
+}
+
+void FPMCharacterNetworkMoveData::ClientFillNetworkMoveData(const FSavedMove_Character& ClientMove, ENetworkMoveType MoveType)
+{
+	Super::ClientFillNetworkMoveData(ClientMove, MoveType);
+
+	const FPMSavedMove& savedMove = static_cast<const FPMSavedMove&>(ClientMove);
+
+	// TODO: how to dynamically set these??
+	WaitTime = savedMove.waitTime;
+	MovementDirectionSign = savedMove.movementDirectionSign;
+	ElapsedTime = savedMove.elapsedTime;
 }
