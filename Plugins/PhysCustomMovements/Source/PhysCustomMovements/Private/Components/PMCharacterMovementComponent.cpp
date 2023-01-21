@@ -246,6 +246,37 @@ void UPMCharacterMovementComponent::OnMovementModeChanged(EMovementMode Previous
 	}
 }
 
+void UPMCharacterMovementComponent::MoveAutonomous(float ClientTimeStamp, float DeltaTime, uint8 CompressedFlags,
+	const FVector& NewAccel)
+{
+	// TODO: how to dynamically set those??
+	if (CustomMovementMode == GetPhysCustomMovementModeFlag())
+	{
+		if (PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
+		{
+			if (auto movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(PhysCustomMovement.Get()))
+			{
+				//Unpacks the Network Move Data for the CMC to use on the server or during replay. Copies Network Move Data into CMC.
+				if (const FPMCharacterNetworkMoveData* moveData = static_cast<FPMCharacterNetworkMoveData*>(GetCurrentNetworkMoveData()))
+				{
+					/*UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: (WaitTime = %.2f, ElapsedTime = %.2f, Direction = %.2f)"),
+						ANSI_TO_TCHAR(__FUNCTION__),
+						GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
+						moveData->WaitTime,
+						moveData->ElapsedTime,
+						moveData->MovementDirectionSign);*/
+
+					movement->TimeToWait = moveData->WaitTime;
+					movement->MovementDirectionSign = moveData->MovementDirectionSign;
+					movement->ElapsedTime = moveData->ElapsedTime;
+				}
+			}
+		}
+	}
+
+	Super::MoveAutonomous(ClientTimeStamp, DeltaTime, CompressedFlags, NewAccel);
+}
+
 void FPMSavedMove::Clear()
 {
 	Super::Clear();

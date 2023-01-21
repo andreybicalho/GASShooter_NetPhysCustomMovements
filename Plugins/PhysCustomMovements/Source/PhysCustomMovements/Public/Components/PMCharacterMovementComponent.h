@@ -123,5 +123,6 @@ public:
 protected:
 	// UCharacterMovementComponent API
 	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
+	virtual void MoveAutonomous(float ClientTimeStamp, float DeltaTime, uint8 CompressedFlags, const FVector& NewAccel);
 	// ~UCharacterMovementComponent
 };

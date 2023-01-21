@@ -27,8 +27,9 @@ void FPhysCustomMovement_NonDeterministicMove::UpdateMovement(const float deltaT
             *movementComponent->GetCurrentAcceleration().ToString());
     }*/
 
-    if (ElapsedTime >= TimeToWait)
+    if (TimeToWait > 0.f && ElapsedTime >= TimeToWait)
     {
+        TimeToWait = -1.f;
         MovementDirectionSign *= -1.f;
         ElapsedTime = 0.f;
         OnReachedTime.Broadcast();
