@@ -290,18 +290,21 @@ bool FPMSavedMove::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* Char
 	{
 		if (auto movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(characterMovement->PhysCustomMovement.Get()))
 		{
-			UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: waitTime = %.2f --- movementDirectionSign = %.2f (%.2f, %.2f)"),
+			UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: WaitTime = %.2f | MovementDirectionSign = %.2f | ElapsedTime = %.2f ( saved move: %.2f, %.2f, %.2f)"),
 				*FString(__FUNCTION__),
 				GET_ACTOR_LOCAL_ROLE_FSTRING(Character),
 				movement->TimeToWait,
-				movement->MovementDirectionSign,
+				movement->MovementDirectionSign, 
+				movement->ElapsedTime,
 				((FPMSavedMove*)NewMove.Get())->waitTime,
-				((FPMSavedMove*)NewMove.Get())->movementDirectionSign);
+				((FPMSavedMove*)NewMove.Get())->movementDirectionSign,
+				((FPMSavedMove*)NewMove.Get())->elapsedTime);
 
 
 			// TODO: how to dynamically check these? 
 			return FMath::IsNearlyEqual(movement->TimeToWait, ((FPMSavedMove*)NewMove.Get())->waitTime, KINDA_SMALL_NUMBER)
-				&& FMath::IsNearlyEqual(movement->MovementDirectionSign, ((FPMSavedMove*)NewMove.Get())->movementDirectionSign, KINDA_SMALL_NUMBER);
+				&& FMath::IsNearlyEqual(movement->MovementDirectionSign, ((FPMSavedMove*)NewMove.Get())->movementDirectionSign, KINDA_SMALL_NUMBER)
+				&& FMath::IsNearlyEqual(movement->ElapsedTime, ((FPMSavedMove*)NewMove.Get())->elapsedTime, KINDA_SMALL_NUMBER);
 		}
 	}
 
