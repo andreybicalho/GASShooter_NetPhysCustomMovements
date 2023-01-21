@@ -128,7 +128,8 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 				UpdateComponentVelocity();
 
 				// update acceleration
-				Acceleration = GetMaxAcceleration() * Velocity.GetSafeNormal();
+				Acceleration = GetMaxAcceleration() * (Velocity.SizeSquared() < SMALL_NUMBER ? UpdatedComponent->GetForwardVector() : Velocity.GetSafeNormal());
+				Acceleration = Acceleration.GetClampedToMaxSize(GetMaxAcceleration());
 
 				AnalogInputModifier = ComputeAnalogInputModifier(); // recompute since acceleration may have changed.
 			}
@@ -146,13 +147,12 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 		}
 		else
 		{
-			// TODO: figure it out what to do with this case... give it time to sync or stop it right away?
 			UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: Phys Custom Movement FLAG is Set but movement is invalid."),
 				ANSI_TO_TCHAR(__FUNCTION__),
 				GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()));
 
-			/*SetMovementMode(MOVE_Falling);
-			StartNewPhysics(deltaTime, Iterations);*/
+			// TODO: what to do? wait until realizing that physcustom should not run or start new physics?
+			//StartNewPhysics(deltaTime, Iterations);
 		}
 	}
 	else
