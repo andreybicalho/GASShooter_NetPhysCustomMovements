@@ -92,4 +92,6 @@ public:
 
 	/** True when this movement is running. */
 	bool IsActive() const { return bIsActive; };
+
+	virtual UScriptStruct* GetTypeStruct() const;
 };

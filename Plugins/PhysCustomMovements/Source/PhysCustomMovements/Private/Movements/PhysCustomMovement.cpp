@@ -37,3 +37,8 @@ void FPhysCustomMovement::EndMovement()
 
 	OnCustomMovementEnd.Broadcast();
 }
+
+UScriptStruct* FPhysCustomMovement::GetTypeStruct() const
+{
+	return FPhysCustomMovement::StaticStruct();
+}

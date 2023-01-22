@@ -35,7 +35,7 @@ public:
 	// Any custom physics movement
 	uint8 bSavedWantsPhysCustomMovement : 1;
 
-	// TODO: replicate other unpredicted data... idea: add maps for binding basic types such as bool, int32, float, FVector, FRotator
+	// TODO: dynamically handling unpredicted data... idea: add maps for binding basic types such as bool, int32, float, FVector, FRotator
 	float waitTime = 99.f;
 	float movementDirectionSign = 1.f;
 	float elapsedTime = 0.f;
@@ -66,6 +66,7 @@ public:
 
 	virtual bool Serialize(UCharacterMovementComponent& CharacterMovement, FArchive& Ar, UPackageMap* PackageMap, ENetworkMoveType MoveType) override;
 
+	// TODO: replicate unpredicted data... should find a way of binding them to this container dynamically
 	float WaitTime = 0.f;
 	float MovementDirectionSign = 1.f;
 	float ElapsedTime = 0.f;

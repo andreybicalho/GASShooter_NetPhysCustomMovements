@@ -37,19 +37,11 @@ void UPMCharacterMovementComponent::UpdateFromCompressedFlags(uint8 Flags)
 	//It basically just resets the movement component to the state when the move was made so it can simulate from there.
 
 	bWantsPhysCustomMovement = (Flags & GetPhysCustomMovementModeFlag()) != 0;
-
-	/*UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s"),
-		*FString(__FUNCTION__),
-		GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()));*/
 }
 
 FNetworkPredictionData_Client* UPMCharacterMovementComponent::GetPredictionData_Client() const
 {
 	check(PawnOwner != NULL);
-
-	/*UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s"),
-		*FString(__FUNCTION__),
-		GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()));*/
 
 	if (!ClientPredictionData)
 	{
@@ -96,11 +88,12 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 			if (!PhysCustomMovement->IsActive())
 			{
 				// TODO: check if this is even reachable with the new flow
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 				UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: Movement Mode is valid but it is inactive. Movement mode will be set to %s."), 
 					ANSI_TO_TCHAR(__FUNCTION__),
 					GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 					*UEnum::GetValueAsString(PhysCustomMovement->FallbackMovementMode));
-
+#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 				SetMovementMode(PhysCustomMovement->FallbackMovementMode);
 				StartNewPhysics(deltaTime, Iterations);
 				return;
@@ -135,31 +128,35 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 			}
 			else
 			{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 				UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: Movement %s requirements has failed! Movement mode will be set to %s."),
 					ANSI_TO_TCHAR(__FUNCTION__),
 					GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 					*PhysCustomMovement->MovementName.ToString(),
 					*UEnum::GetValueAsString(PhysCustomMovement->FallbackMovementMode));
-
+#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 				SetMovementMode(PhysCustomMovement->FallbackMovementMode);
 				StartNewPhysics(deltaTime, Iterations);
 			}
 		}
 		else
 		{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 			UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: Phys Custom Movement FLAG is Set but movement is invalid."),
 				ANSI_TO_TCHAR(__FUNCTION__),
 				GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()));
-
+#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 			// TODO: what to do? wait until realizing that physcustom should not run or start new physics?
 			//StartNewPhysics(deltaTime, Iterations);
 		}
 	}
 	else
 	{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 		UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: CustomMovementMode doesn't match our Phys Custom Movement Mode Flag. Are you sure you want to run another custom movement?"),
 			ANSI_TO_TCHAR(__FUNCTION__),
 			GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()));
+#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 	}
 
 	// Not sure if this is needed
@@ -170,12 +167,13 @@ bool UPMCharacterMovementComponent::StartPhysCustomMovement(TSharedPtr<FPhysCust
 {
 	if (PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
 	{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 		UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: %s is still active. If you want to start %s, wait till that movement is done or manually stop it."),
 			ANSI_TO_TCHAR(__FUNCTION__),
 			GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 			*PhysCustomMovement->MovementName.ToString(),
 			*inPhysCustomMovement->MovementName.ToString());
-
+#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 		return false;
 	}
 
@@ -183,10 +181,11 @@ bool UPMCharacterMovementComponent::StartPhysCustomMovement(TSharedPtr<FPhysCust
 
 	if (inPhysCustomMovement.IsValid())
 	{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 		UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: Starting Movement: %s"),
 			ANSI_TO_TCHAR(__FUNCTION__), GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 			*PhysCustomMovement->MovementName.ToString());
-
+#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 		bWantsPhysCustomMovement = PhysCustomMovement->BeginMovement(
 			GetCharacterOwner(),
 			this,
@@ -199,12 +198,12 @@ bool UPMCharacterMovementComponent::StartPhysCustomMovement(TSharedPtr<FPhysCust
 void UPMCharacterMovementComponent::StopPhysCustomMovement()
 {
 	bWantsPhysCustomMovement = false;
-
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 	UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: Ending Movement: %s"),
 		ANSI_TO_TCHAR(__FUNCTION__),
 		GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 		PhysCustomMovement.IsValid() ? *PhysCustomMovement->MovementName.ToString() : TEXT("Invalid"));
-
+#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 	if (PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
 	{
 		PhysCustomMovement->EndMovement();
@@ -234,12 +233,14 @@ void UPMCharacterMovementComponent::OnMovementModeChanged(EMovementMode Previous
 		// TODO: should check if we are changing from a phys custom movement to another phys custom movement?
 		if (PreviousMovementMode == MOVE_Custom && PreviousCustomMode == GetPhysCustomMovementModeFlag())
 		{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 			UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: Movement Mode Changed from %s to %s during Movement %s. Requesting to Stop the Phys Custom Movement..."),
 				ANSI_TO_TCHAR(__FUNCTION__),
 				GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 				*UEnum::GetValueAsString(PreviousMovementMode),
 				*UEnum::GetValueAsString(MovementMode),
 				PhysCustomMovement.IsValid() ? *PhysCustomMovement->MovementName.ToString() : TEXT("Invalid"));
+#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 
 			StopPhysCustomMovement();
 		}
@@ -249,17 +250,18 @@ void UPMCharacterMovementComponent::OnMovementModeChanged(EMovementMode Previous
 void UPMCharacterMovementComponent::MoveAutonomous(float ClientTimeStamp, float DeltaTime, uint8 CompressedFlags,
 	const FVector& NewAccel)
 {
+	// Apply unpredicted data to the current custom movement to keep server and client simulating with the same values.
 	// TODO: how to dynamically set those??
-	if (CustomMovementMode == GetPhysCustomMovementModeFlag())
+	if (CustomMovementMode == GetPhysCustomMovementModeFlag() && PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
 	{
-		if (PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
+		if (PhysCustomMovement->GetTypeStruct() == FPhysCustomMovement_NonDeterministicMove::StaticStruct())
 		{
-			if (auto movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(PhysCustomMovement.Get()))
+			if (FPhysCustomMovement_NonDeterministicMove* movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(PhysCustomMovement.Get()))
 			{
 				//Unpacks the Network Move Data for the CMC to use on the server or during replay. Copies Network Move Data into CMC.
 				if (const FPMCharacterNetworkMoveData* moveData = static_cast<FPMCharacterNetworkMoveData*>(GetCurrentNetworkMoveData()))
 				{
-					/*UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: (WaitTime = %.2f, ElapsedTime = %.2f, Direction = %.2f)"),
+					/*UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: (WaitTime = %.2f, ElapsedTime = %.2f, MovementDirectionSign = %.2f)"),
 						ANSI_TO_TCHAR(__FUNCTION__),
 						GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 						moveData->WaitTime,
@@ -305,33 +307,16 @@ bool FPMSavedMove::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* Char
 {
 	//Set which moves can be combined together. This will depend on the bit flags that are used.
 
-	UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: bSavedWantsPhysCustomMovement = %d / SavedMove->bSavedWantsPhysCustomMovement %d"),
-		*FString(__FUNCTION__),
-		GET_ACTOR_LOCAL_ROLE_FSTRING(Character), 
-		bSavedWantsPhysCustomMovement,
-		((FPMSavedMove*)NewMove.Get())->bSavedWantsPhysCustomMovement);
-
 	if (bSavedWantsPhysCustomMovement != ((FPMSavedMove*)NewMove.Get())->bSavedWantsPhysCustomMovement)
 	{
 		return false;
 	}
 
-	// TODO: should check for non predicted data?
+	// TODO: should check for non predicted data? how to do it if they were dynamically added?
 	if (UPMCharacterMovementComponent* characterMovement = Cast<UPMCharacterMovementComponent>(Character->GetCharacterMovement()))
 	{
 		if (auto movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(characterMovement->PhysCustomMovement.Get()))
 		{
-			UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: WaitTime = %.2f | MovementDirectionSign = %.2f | ElapsedTime = %.2f ( saved move: %.2f, %.2f, %.2f)"),
-				*FString(__FUNCTION__),
-				GET_ACTOR_LOCAL_ROLE_FSTRING(Character),
-				movement->TimeToWait,
-				movement->MovementDirectionSign, 
-				movement->ElapsedTime,
-				((FPMSavedMove*)NewMove.Get())->waitTime,
-				((FPMSavedMove*)NewMove.Get())->movementDirectionSign,
-				((FPMSavedMove*)NewMove.Get())->elapsedTime);
-
-
 			// TODO: how to dynamically check these? 
 			return FMath::IsNearlyEqual(movement->TimeToWait, ((FPMSavedMove*)NewMove.Get())->waitTime, KINDA_SMALL_NUMBER)
 				&& FMath::IsNearlyEqual(movement->MovementDirectionSign, ((FPMSavedMove*)NewMove.Get())->movementDirectionSign, KINDA_SMALL_NUMBER)
@@ -351,15 +336,9 @@ void FPMSavedMove::SetMoveFor(ACharacter* Character, float InDeltaTime, FVector 
 		// Copy values into the saved move
 		bSavedWantsPhysCustomMovement = characterMovement->bWantsPhysCustomMovement;
 
-		// TODO: should set non deterministic data here as well?
+		// TODO: should set non deterministic data here as well? how to do it if they were dynamically added
 		if (auto movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(characterMovement->PhysCustomMovement.Get()))
 		{
-			/*UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: waitTime = %.2f --- movementDirectionSign = %.2f"),
-				*FString(__FUNCTION__),
-				GET_ACTOR_LOCAL_ROLE_FSTRING(Character),
-				movement->TimeToWait,
-				movement->MovementDirectionSign);*/
-
 			// TODO: how to dynamically set these??
 			waitTime = movement->TimeToWait;
 			movementDirectionSign = movement->MovementDirectionSign;
@@ -380,15 +359,9 @@ void FPMSavedMove::PrepMoveFor(ACharacter* Character)
 		// Copy values out of the saved move
 		characterMovement->bWantsPhysCustomMovement = bSavedWantsPhysCustomMovement;
 
-		// TODO: should apply non predicted values here?
+		// TODO: should apply non predicted values here? how to do it if they were dynamically added
 		if (auto movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(characterMovement->PhysCustomMovement.Get()))
 		{
-			/*UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: waitTime = %.2f --- movementDirectionSign = %.2f"),
-				*FString(__FUNCTION__),
-				GET_ACTOR_LOCAL_ROLE_FSTRING(Character),
-				movement->TimeToWait,
-				movement->MovementDirectionSign);*/
-
 			// TODO: how to dynamically set these??
 			movement->TimeToWait = waitTime;
 			movement->MovementDirectionSign = movementDirectionSign;

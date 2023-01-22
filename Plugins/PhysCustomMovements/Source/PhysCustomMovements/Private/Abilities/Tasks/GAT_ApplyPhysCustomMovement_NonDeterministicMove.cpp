@@ -14,7 +14,7 @@ void UGAT_ApplyPhysCustomMovement_NonDeterministicMove::OnDestroy(bool AbilityIs
 {
 	if (PhysCustomMovement.IsValid())
 	{
-		if (const auto movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(PhysCustomMovement.Get()))
+		if (FPhysCustomMovement_NonDeterministicMove*  movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(PhysCustomMovement.Get()))
 		{
 			movement->OnReachedTime.RemoveAll(this);
 		}
@@ -42,10 +42,17 @@ UGAT_ApplyPhysCustomMovement_NonDeterministicMove* UGAT_ApplyPhysCustomMovement_
 
 void UGAT_ApplyPhysCustomMovement_NonDeterministicMove::SetWaitTime(const float waitTime)
 {
-	if (const auto movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(PhysCustomMovement.Get()))
+	if (FPhysCustomMovement_NonDeterministicMove* movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(PhysCustomMovement.Get()))
 	{
 		movement->TimeToWait = waitTime;
 		movement->ElapsedTime = 0.f;
+
+		UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: TimeToWait = %.2f | ElapsedTime = %.2f"),
+			ANSI_TO_TCHAR(__FUNCTION__),
+			*UEnum::GetValueAsString(GetAvatarActor()->GetLocalRole()),
+			movement->TimeToWait,
+			movement->ElapsedTime
+		);
 	}
 }
 

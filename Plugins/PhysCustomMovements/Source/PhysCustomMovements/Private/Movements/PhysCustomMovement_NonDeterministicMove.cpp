@@ -16,17 +16,6 @@ void FPhysCustomMovement_NonDeterministicMove::UpdateMovement(const float deltaT
 
     ElapsedTime += deltaTime;
 
-    /*if (const auto movementComponent = Cast<UPMCharacterMovementComponent>(CharacterMovementComponent))
-    {
-		UE_LOG(LogPhysNonDeterministicMove, Warning, TEXT("%s: %s: bWantsPhysCustomMovement: %d ---> TimeToWait = %.2f | MovementDirectionSign = %.2f | Acceleration: %s"),
-			*FString(__FUNCTION__),
-			*UEnum::GetValueAsString(movementComponent->GetCharacterOwner()->GetLocalRole()),
-            movementComponent->bWantsPhysCustomMovement,
-			TimeToWait,
-			MovementDirectionSign,
-            *movementComponent->GetCurrentAcceleration().ToString());
-    }*/
-
     if (TimeToWait > 0.f && ElapsedTime >= TimeToWait)
     {
         TimeToWait = -1.f;
@@ -38,3 +27,8 @@ void FPhysCustomMovement_NonDeterministicMove::UpdateMovement(const float deltaT
     outVelocity = CharacterMovementComponent->GetCurrentAcceleration() * MovementDirectionSign * GetMaxSpeed();
     outVelocity = outVelocity.GetClampedToMaxSize(GetMaxSpeed());
 };
+
+UScriptStruct* FPhysCustomMovement_NonDeterministicMove::GetTypeStruct() const
+{
+    return FPhysCustomMovement_NonDeterministicMove::StaticStruct();
+}
