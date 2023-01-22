@@ -2,13 +2,16 @@
 
 #include "Components/PMCharacterMovementComponent.h"
 #include "GameFramework/Character.h"
+#include "Movements/PhysCustomMovement_NonDeterministicMove.h" // TODO: remove this when figure out how to bind non predicted data dynamically
 
 DEFINE_LOG_CATEGORY(LogPhysCustomMovement);
 
 DECLARE_CYCLE_STAT(TEXT("Char PhysCustom"), STAT_UPMCharacterMovementComponent_PhysCustom, STATGROUP_Character);
 
-UPMCharacterMovementComponent::UPMCharacterMovementComponent()
+UPMCharacterMovementComponent::UPMCharacterMovementComponent(const FObjectInitializer& ObjectInitializer) 
+	: UCharacterMovementComponent(ObjectInitializer)
 {
+	SetNetworkMoveDataContainer(CustomCharacterNetworkMoveDataContainer);
 }
 
 float UPMCharacterMovementComponent::GetMaxSpeed() const
@@ -28,6 +31,7 @@ void UPMCharacterMovementComponent::UpdateFromCompressedFlags(uint8 Flags)
 {
 	Super::UpdateFromCompressedFlags(Flags);
 
+	//This is called on the server when processing a move with a given timestamp.
 	//The Flags parameter contains the compressed input flags that are stored in the saved move.
 	//UpdateFromCompressed flags simply copies the flags from the saved move into the movement component.
 	//It basically just resets the movement component to the state when the move was made so it can simulate from there.
@@ -50,7 +54,6 @@ FNetworkPredictionData_Client* UPMCharacterMovementComponent::GetPredictionData_
 
 	return ClientPredictionData;
 }
-
 
 void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
 {
@@ -85,11 +88,12 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 			if (!PhysCustomMovement->IsActive())
 			{
 				// TODO: check if this is even reachable with the new flow
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 				UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: Movement Mode is valid but it is inactive. Movement mode will be set to %s."), 
 					ANSI_TO_TCHAR(__FUNCTION__),
 					GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 					*UEnum::GetValueAsString(PhysCustomMovement->FallbackMovementMode));
-
+#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 				SetMovementMode(PhysCustomMovement->FallbackMovementMode);
 				StartNewPhysics(deltaTime, Iterations);
 				return;
@@ -124,31 +128,35 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 			}
 			else
 			{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 				UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: Movement %s requirements has failed! Movement mode will be set to %s."),
 					ANSI_TO_TCHAR(__FUNCTION__),
 					GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 					*PhysCustomMovement->MovementName.ToString(),
 					*UEnum::GetValueAsString(PhysCustomMovement->FallbackMovementMode));
-
+#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 				SetMovementMode(PhysCustomMovement->FallbackMovementMode);
 				StartNewPhysics(deltaTime, Iterations);
 			}
 		}
 		else
 		{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 			UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: Phys Custom Movement FLAG is Set but movement is invalid."),
 				ANSI_TO_TCHAR(__FUNCTION__),
 				GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()));
-
+#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 			// TODO: what to do? wait until realizing that physcustom should not run or start new physics?
 			//StartNewPhysics(deltaTime, Iterations);
 		}
 	}
 	else
 	{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 		UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: CustomMovementMode doesn't match our Phys Custom Movement Mode Flag. Are you sure you want to run another custom movement?"),
 			ANSI_TO_TCHAR(__FUNCTION__),
 			GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()));
+#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 	}
 
 	// Not sure if this is needed
@@ -159,12 +167,13 @@ bool UPMCharacterMovementComponent::StartPhysCustomMovement(TSharedPtr<FPhysCust
 {
 	if (PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
 	{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 		UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: %s is still active. If you want to start %s, wait till that movement is done or manually stop it."),
 			ANSI_TO_TCHAR(__FUNCTION__),
 			GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 			*PhysCustomMovement->MovementName.ToString(),
 			*inPhysCustomMovement->MovementName.ToString());
-
+#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 		return false;
 	}
 
@@ -172,10 +181,11 @@ bool UPMCharacterMovementComponent::StartPhysCustomMovement(TSharedPtr<FPhysCust
 
 	if (inPhysCustomMovement.IsValid())
 	{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 		UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: Starting Movement: %s"),
 			ANSI_TO_TCHAR(__FUNCTION__), GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 			*PhysCustomMovement->MovementName.ToString());
-
+#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 		bWantsPhysCustomMovement = PhysCustomMovement->BeginMovement(
 			GetCharacterOwner(),
 			this,
@@ -188,12 +198,12 @@ bool UPMCharacterMovementComponent::StartPhysCustomMovement(TSharedPtr<FPhysCust
 void UPMCharacterMovementComponent::StopPhysCustomMovement()
 {
 	bWantsPhysCustomMovement = false;
-
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 	UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: Ending Movement: %s"),
 		ANSI_TO_TCHAR(__FUNCTION__),
 		GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 		PhysCustomMovement.IsValid() ? *PhysCustomMovement->MovementName.ToString() : TEXT("Invalid"));
-
+#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 	if (PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
 	{
 		PhysCustomMovement->EndMovement();
@@ -213,7 +223,6 @@ uint8 UPMCharacterMovementComponent::GetPhysCustomMovementModeFlag() const
 	return FPMSavedMove::FLAG_Custom_0;
 }
 
-
 void UPMCharacterMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
 {
 	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
@@ -224,16 +233,50 @@ void UPMCharacterMovementComponent::OnMovementModeChanged(EMovementMode Previous
 		// TODO: should check if we are changing from a phys custom movement to another phys custom movement?
 		if (PreviousMovementMode == MOVE_Custom && PreviousCustomMode == GetPhysCustomMovementModeFlag())
 		{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 			UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: Movement Mode Changed from %s to %s during Movement %s. Requesting to Stop the Phys Custom Movement..."),
 				ANSI_TO_TCHAR(__FUNCTION__),
 				GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 				*UEnum::GetValueAsString(PreviousMovementMode),
 				*UEnum::GetValueAsString(MovementMode),
 				PhysCustomMovement.IsValid() ? *PhysCustomMovement->MovementName.ToString() : TEXT("Invalid"));
+#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 
 			StopPhysCustomMovement();
 		}
 	}
+}
+
+void UPMCharacterMovementComponent::MoveAutonomous(float ClientTimeStamp, float DeltaTime, uint8 CompressedFlags,
+	const FVector& NewAccel)
+{
+	// Apply unpredicted data to the current custom movement to keep server and client simulating with the same values.
+	// TODO: how to dynamically set those??
+	if (CustomMovementMode == GetPhysCustomMovementModeFlag() && PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
+	{
+		if (PhysCustomMovement->GetTypeStruct() == FPhysCustomMovement_NonDeterministicMove::StaticStruct())
+		{
+			if (FPhysCustomMovement_NonDeterministicMove* movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(PhysCustomMovement.Get()))
+			{
+				//Unpacks the Network Move Data for the CMC to use on the server or during replay. Copies Network Move Data into CMC.
+				if (const FPMCharacterNetworkMoveData* moveData = static_cast<FPMCharacterNetworkMoveData*>(GetCurrentNetworkMoveData()))
+				{
+					/*UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: (WaitTime = %.2f, ElapsedTime = %.2f, MovementDirectionSign = %.2f)"),
+						ANSI_TO_TCHAR(__FUNCTION__),
+						GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
+						moveData->WaitTime,
+						moveData->ElapsedTime,
+						moveData->MovementDirectionSign);*/
+
+					movement->TimeToWait = moveData->WaitTime;
+					movement->MovementDirectionSign = moveData->MovementDirectionSign;
+					movement->ElapsedTime = moveData->ElapsedTime;
+				}
+			}
+		}
+	}
+
+	Super::MoveAutonomous(ClientTimeStamp, DeltaTime, CompressedFlags, NewAccel);
 }
 
 void FPMSavedMove::Clear()
@@ -241,6 +284,11 @@ void FPMSavedMove::Clear()
 	Super::Clear();
 
 	bSavedWantsPhysCustomMovement = false;
+
+	// TODO: should clear non predicted data here?
+	waitTime = 99.f;
+	movementDirectionSign = 1.f;
+	elapsedTime = 0.f;
 }
 
 uint8 FPMSavedMove::GetCompressedFlags() const
@@ -264,6 +312,18 @@ bool FPMSavedMove::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* Char
 		return false;
 	}
 
+	// TODO: should check for non predicted data? how to do it if they were dynamically added?
+	if (UPMCharacterMovementComponent* characterMovement = Cast<UPMCharacterMovementComponent>(Character->GetCharacterMovement()))
+	{
+		if (auto movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(characterMovement->PhysCustomMovement.Get()))
+		{
+			// TODO: how to dynamically check these? 
+			return FMath::IsNearlyEqual(movement->TimeToWait, ((FPMSavedMove*)NewMove.Get())->waitTime, KINDA_SMALL_NUMBER)
+				&& FMath::IsNearlyEqual(movement->MovementDirectionSign, ((FPMSavedMove*)NewMove.Get())->movementDirectionSign, KINDA_SMALL_NUMBER)
+				&& FMath::IsNearlyEqual(movement->ElapsedTime, ((FPMSavedMove*)NewMove.Get())->elapsedTime, KINDA_SMALL_NUMBER);
+		}
+	}
+
 	return Super::CanCombineWith(NewMove, Character, MaxDelta);
 }
 
@@ -271,11 +331,19 @@ void FPMSavedMove::SetMoveFor(ACharacter* Character, float InDeltaTime, FVector 
 {
 	Super::SetMoveFor(Character, InDeltaTime, NewAccel, ClientData);
 
-	UPMCharacterMovementComponent* CharacterMovement = Cast<UPMCharacterMovementComponent>(Character->GetCharacterMovement());
-	if (CharacterMovement)
+	if (UPMCharacterMovementComponent* characterMovement = Cast<UPMCharacterMovementComponent>(Character->GetCharacterMovement()))
 	{
 		// Copy values into the saved move
-		bSavedWantsPhysCustomMovement = CharacterMovement->bWantsPhysCustomMovement;
+		bSavedWantsPhysCustomMovement = characterMovement->bWantsPhysCustomMovement;
+
+		// TODO: should set non deterministic data here as well? how to do it if they were dynamically added
+		if (auto movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(characterMovement->PhysCustomMovement.Get()))
+		{
+			// TODO: how to dynamically set these??
+			waitTime = movement->TimeToWait;
+			movementDirectionSign = movement->MovementDirectionSign;
+			elapsedTime = movement->ElapsedTime;
+		}
 	}
 }
 
@@ -283,11 +351,22 @@ void FPMSavedMove::PrepMoveFor(ACharacter* Character)
 {
 	Super::PrepMoveFor(Character);
 
-	UPMCharacterMovementComponent* CharacterMovement = Cast<UPMCharacterMovementComponent>(Character->GetCharacterMovement());
-	if (CharacterMovement)
+	// This is used to copy state from the saved move to the character movement component. 
+	// This is ONLY used for predictive corrections, the actual data must be sent through RPC.
+
+ 	if (UPMCharacterMovementComponent* characterMovement = Cast<UPMCharacterMovementComponent>(Character->GetCharacterMovement()))
 	{
 		// Copy values out of the saved move
-		CharacterMovement->bWantsPhysCustomMovement = bSavedWantsPhysCustomMovement;
+		characterMovement->bWantsPhysCustomMovement = bSavedWantsPhysCustomMovement;
+
+		// TODO: should apply non predicted values here? how to do it if they were dynamically added
+		if (auto movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(characterMovement->PhysCustomMovement.Get()))
+		{
+			// TODO: how to dynamically set these??
+			movement->TimeToWait = waitTime;
+			movement->MovementDirectionSign = movementDirectionSign;
+			movement->ElapsedTime = elapsedTime;
+		}
 	}
 }
 
@@ -299,4 +378,36 @@ FPMNetworkPredictionData_Client::FPMNetworkPredictionData_Client(const UCharacte
 FSavedMovePtr FPMNetworkPredictionData_Client::AllocateNewMove()
 {
 	return FSavedMovePtr(new FPMSavedMove());
+}
+// 
+FPMCharacterNetworkMoveDataContainer::FPMCharacterNetworkMoveDataContainer() : Super()
+{
+	NewMoveData = &CustomDefaultMoveData[0];
+	PendingMoveData = &CustomDefaultMoveData[1];
+	OldMoveData = &CustomDefaultMoveData[2];
+}
+
+//Sends the Movement Data 
+bool FPMCharacterNetworkMoveData::Serialize(UCharacterMovementComponent& CharacterMovement, FArchive& Ar, UPackageMap* PackageMap, ENetworkMoveType MoveType)
+{
+	Super::Serialize(CharacterMovement, Ar, PackageMap, MoveType);
+
+	// TODO: how to dynamically serialize these??
+	SerializeOptionalValue<float>(Ar.IsSaving(), Ar, WaitTime, 0.f);
+	SerializeOptionalValue<float>(Ar.IsSaving(), Ar, MovementDirectionSign, 1.f);
+	SerializeOptionalValue<float>(Ar.IsSaving(), Ar, ElapsedTime, 0.f);
+
+	return !Ar.IsError();
+}
+
+void FPMCharacterNetworkMoveData::ClientFillNetworkMoveData(const FSavedMove_Character& ClientMove, ENetworkMoveType MoveType)
+{
+	Super::ClientFillNetworkMoveData(ClientMove, MoveType);
+
+	const FPMSavedMove& savedMove = static_cast<const FPMSavedMove&>(ClientMove);
+
+	// TODO: how to dynamically set these??
+	WaitTime = savedMove.waitTime;
+	MovementDirectionSign = savedMove.movementDirectionSign;
+	ElapsedTime = savedMove.elapsedTime;
 }

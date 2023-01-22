@@ -16,5 +16,5 @@ class GASSHOOTER_API UGSCharacterMovementComponent : public UPMCharacterMovement
 	GENERATED_BODY()
 
 public:
-	UGSCharacterMovementComponent();
+	UGSCharacterMovementComponent(const FObjectInitializer& ObjectInitializer);
 };

@@ -35,11 +35,18 @@ public:
 	// Any custom physics movement
 	uint8 bSavedWantsPhysCustomMovement : 1;
 
-	// TODO: replicate other unpredicted data... idea: add maps for binding basic types such as bool, int32, float, FVector, FRotator
+	// TODO: dynamically handling unpredicted data... idea: add maps for binding basic types such as bool, int32, float, FVector, FRotator
+	float waitTime = 99.f;
+	float movementDirectionSign = 1.f;
+	float elapsedTime = 0.f;
 };
 
 class FPMNetworkPredictionData_Client : public FNetworkPredictionData_Client_Character
 {
+
+public:
+	FPhysCustomMovement PhysCustomMovement;
+
 public:
 	FPMNetworkPredictionData_Client(const UCharacterMovementComponent& ClientMovement);
 
@@ -47,6 +54,32 @@ public:
 
 	///@brief Allocates a new copy of our custom saved move
 	virtual FSavedMovePtr AllocateNewMove() override;
+};
+
+//Network Move DATA
+class FPMCharacterNetworkMoveData : public FCharacterNetworkMoveData
+{
+public:
+	typedef FCharacterNetworkMoveData Super;
+
+	virtual void ClientFillNetworkMoveData(const FSavedMove_Character& ClientMove, ENetworkMoveType MoveType) override;
+
+	virtual bool Serialize(UCharacterMovementComponent& CharacterMovement, FArchive& Ar, UPackageMap* PackageMap, ENetworkMoveType MoveType) override;
+
+	// TODO: replicate unpredicted data... should find a way of binding them to this container dynamically
+	float WaitTime = 0.f;
+	float MovementDirectionSign = 1.f;
+	float ElapsedTime = 0.f;
+};
+
+class FPMCharacterNetworkMoveDataContainer : public FCharacterNetworkMoveDataContainer
+{
+public:
+	typedef FCharacterNetworkMoveDataContainer Super;
+
+	FPMCharacterNetworkMoveDataContainer();
+
+	FPMCharacterNetworkMoveData CustomDefaultMoveData[3];
 };
 
 /**
@@ -59,13 +92,13 @@ class PHYSCUSTOMMOVEMENTS_API UPMCharacterMovementComponent : public UCharacterM
 	
 	friend class FPMSavedMove;
 
+public:
 	TSharedPtr<FPhysCustomMovement> PhysCustomMovement;
-
-public:
 	uint8 bWantsPhysCustomMovement : 1;
+	FPMCharacterNetworkMoveDataContainer CustomCharacterNetworkMoveDataContainer;
 
 public:
-	UPMCharacterMovementComponent();
+	UPMCharacterMovementComponent(const FObjectInitializer& ObjectInitializer);
 
 	// UCharacterMovementComponent API
 	virtual void PhysCustom(float deltaTime, int32 Iterations) override;
@@ -91,5 +124,6 @@ public:
 protected:
 	// UCharacterMovementComponent API
 	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
+	virtual void MoveAutonomous(float ClientTimeStamp, float DeltaTime, uint8 CompressedFlags, const FVector& NewAccel);
 	// ~UCharacterMovementComponent
 };
