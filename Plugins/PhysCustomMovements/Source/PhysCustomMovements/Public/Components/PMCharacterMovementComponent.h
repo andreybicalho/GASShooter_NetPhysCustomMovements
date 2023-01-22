@@ -43,10 +43,6 @@ public:
 
 class FPMNetworkPredictionData_Client : public FNetworkPredictionData_Client_Character
 {
-
-public:
-	FPhysCustomMovement PhysCustomMovement;
-
 public:
 	FPMNetworkPredictionData_Client(const UCharacterMovementComponent& ClientMovement);
 
@@ -92,7 +88,7 @@ class PHYSCUSTOMMOVEMENTS_API UPMCharacterMovementComponent : public UCharacterM
 	
 	friend class FPMSavedMove;
 
-public:
+protected:
 	TSharedPtr<FPhysCustomMovement> PhysCustomMovement;
 	uint8 bWantsPhysCustomMovement : 1;
 	FPMCharacterNetworkMoveDataContainer CustomCharacterNetworkMoveDataContainer;
