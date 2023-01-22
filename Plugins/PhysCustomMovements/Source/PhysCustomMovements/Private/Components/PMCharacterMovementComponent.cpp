@@ -121,11 +121,10 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 				UpdateComponentVelocity();
 
 				// update acceleration
-				Acceleration = Velocity.Size() * Velocity.GetSafeNormal();
-				//Acceleration = GetMaxAcceleration() * Velocity.GetSafeNormal();
-				//Acceleration = Acceleration.GetClampedToMaxSize(GetMaxAcceleration());
+				Acceleration = GetMaxAcceleration() * Velocity.GetSafeNormal();
+				Acceleration = Acceleration.GetClampedToMaxSize(GetMaxAcceleration());
 
-				AnalogInputModifier = ComputeAnalogInputModifier(); // recompute since acceleration may have changed.
+				AnalogInputModifier = ComputeAnalogInputModifier(); // recompute since acceleration have changed.
 			}
 			else
 			{
