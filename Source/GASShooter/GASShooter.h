@@ -4,10 +4,8 @@
 
 #include "CoreMinimal.h"
 
-#define ACTOR_ROLE_FSTRING *(FindObject<UEnum>(ANY_PACKAGE, TEXT("ENetRole"), true)->GetNameStringByValue(GetLocalRole()))
-#define GET_ACTOR_ROLE_FSTRING(Actor) *(FindObject<UEnum>(ANY_PACKAGE, TEXT("ENetRole"), true)->GetNameStringByValue(Actor->GetLocalRole()))
-#define GET_ACTOR_LOCAL_ROLE_FSTRING(Actor) *UEnum::GetValueAsString(Actor->GetLocalRole()) // another way of getting local role string from enum
-
+#define ACTOR_ROLE_FSTRING *(FindObject<UEnum>(nullptr, TEXT("/Script/Engine.ENetRole"), true)->GetNameStringByValue(GetLocalRole()))
+#define GET_ACTOR_ROLE_FSTRING(Actor) *(FindObject<UEnum>(nullptr, TEXT("/Script/Engine.ENetRole"), true)->GetNameStringByValue(Actor->GetLocalRole()))
 
 #define COLLISION_ABILITY						ECollisionChannel::ECC_GameTraceChannel1
 #define COLLISION_PROJECTILE					ECollisionChannel::ECC_GameTraceChannel2
@@ -19,29 +17,29 @@ UENUM(BlueprintType)
 enum class EGSAbilityInputID : uint8
 {
 	// 0 None
-	None						UMETA(DisplayName = "None"),
+	None				UMETA(DisplayName = "None"),
 	// 1 Confirm
-	Confirm						UMETA(DisplayName = "Confirm"),
+	Confirm				UMETA(DisplayName = "Confirm"),
 	// 2 Cancel
-	Cancel						UMETA(DisplayName = "Cancel"),
+	Cancel				UMETA(DisplayName = "Cancel"),
 	// 3 Sprint
-	Sprint						UMETA(DisplayName = "Sprint"),
+	Sprint				UMETA(DisplayName = "Sprint"),
 	// 4 Jump
-	Jump						UMETA(DisplayName = "Jump"),
+	Jump				UMETA(DisplayName = "Jump"),
 	// 5 PrimaryFire
-	PrimaryFire					UMETA(DisplayName = "Primary Fire"),
+	PrimaryFire			UMETA(DisplayName = "Primary Fire"),
 	// 6 SecondaryFire
-	SecondaryFire				UMETA(DisplayName = "Secondary Fire"),
+	SecondaryFire		UMETA(DisplayName = "Secondary Fire"),
 	// 7 Alternate Fire
-	AlternateFire				UMETA(DisplayName = "Alternate Fire"),
+	AlternateFire		UMETA(DisplayName = "Alternate Fire"),
 	// 8 Reload
-	Reload						UMETA(DisplayName = "Reload"),
+	Reload				UMETA(DisplayName = "Reload"),
 	// 9 NextWeapon
-	NextWeapon					UMETA(DisplayName = "Next Weapon"), 
+	NextWeapon			UMETA(DisplayName = "Next Weapon"), 
 	// 10 PrevWeapon
-	PrevWeapon					UMETA(DisplayName = "Previous Weapon"),
+	PrevWeapon			UMETA(DisplayName = "Previous Weapon"),
 	// 11 Interact
-	Interact					UMETA(DisplayName = "Interact"),
+	Interact			UMETA(DisplayName = "Interact"),
 	// Phys Jump
 	PhysJump					UMETA(DisplayName = "Phys Jump"),
 	// Phys JetPack

@@ -3,7 +3,7 @@
 
 #include "Characters/GSCharacterMovementComponent.h"
 
-UGSCharacterMovementComponent::UGSCharacterMovementComponent(const FObjectInitializer& ObjectInitializer) 
+UGSCharacterMovementComponent::UGSCharacterMovementComponent(const FObjectInitializer& ObjectInitializer)
 	: UPMCharacterMovementComponent(ObjectInitializer)
 {
 }

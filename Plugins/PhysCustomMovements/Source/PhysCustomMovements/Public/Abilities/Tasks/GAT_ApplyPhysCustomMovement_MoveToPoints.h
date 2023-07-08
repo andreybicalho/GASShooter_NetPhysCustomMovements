@@ -23,7 +23,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Ability|Tasks", meta = (HidePin = "OwningAbility", DefaultToSelf = "OwningAbility", BlueprintInternalUseOnly = "TRUE"))
 	static UGAT_ApplyPhysCustomMovement_MoveToPoints* PhysMoveToPoints(UGameplayAbility* OwningAbility, FName TaskInstanceName,
-			const TArray<FVector>& inPathPoints, float inConsumePointDistanceThreshold = 100.f, float inMaxSpeed = 900);
+			const TArray<FVector>& inPathPoints, float inConsumePointDistanceThreshold, 
+			const float inMaxSpeed, const float inMaxAcceleration, const float MaxBrakingDeceleration);
 
 protected:
 	virtual void InitAndApply() override;

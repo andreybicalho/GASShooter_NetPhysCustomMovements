@@ -10,7 +10,8 @@ UGAT_ApplyPhysCustomMovement_MoveToPoints::UGAT_ApplyPhysCustomMovement_MoveToPo
 {
 }
 
-UGAT_ApplyPhysCustomMovement_MoveToPoints* UGAT_ApplyPhysCustomMovement_MoveToPoints::PhysMoveToPoints(UGameplayAbility* OwningAbility, FName TaskInstanceName, const TArray<FVector>& inPathPoints, float inConsumePointDistanceThreshold, float inMaxSpeed)
+UGAT_ApplyPhysCustomMovement_MoveToPoints* UGAT_ApplyPhysCustomMovement_MoveToPoints::PhysMoveToPoints(UGameplayAbility* OwningAbility, FName TaskInstanceName, 
+	const TArray<FVector>& inPathPoints, float inConsumePointDistanceThreshold, const float inMaxSpeed, const float inMaxAcceleration, const float MaxBrakingDeceleration)
 {
 	UGAT_ApplyPhysCustomMovement_MoveToPoints* abilityTask = NewAbilityTask<UGAT_ApplyPhysCustomMovement_MoveToPoints>(OwningAbility, TaskInstanceName);
 
@@ -18,6 +19,8 @@ UGAT_ApplyPhysCustomMovement_MoveToPoints* UGAT_ApplyPhysCustomMovement_MoveToPo
 	{
 		abilityTask->CustomMovementName = TaskInstanceName;
 		abilityTask->MaxSpeed = inMaxSpeed;
+		abilityTask->MaxAcceleration = inMaxAcceleration;
+		abilityTask->MaxBrakingDeceleration = MaxBrakingDeceleration;
 		abilityTask->PathPoints = inPathPoints;
 		abilityTask->ConsumePointDistanceThreshold = inConsumePointDistanceThreshold;
 
@@ -41,6 +44,8 @@ void UGAT_ApplyPhysCustomMovement_MoveToPoints::InitAndApply()
 
 			movement->MovementName = CustomMovementName;
 			movement->MaxSpeed = MaxSpeed;
+			movement->MaxAcceleration = MaxAcceleration;
+			movement->MaxBrakingDeceleration = MaxBrakingDeceleration;
 			movement->CharacterMovementComponent = CharacterMovementComponent;
 			movement->PathPoints = PathPoints;
 			movement->ConsumePointDistanceThreshold = ConsumePointDistanceThreshold;

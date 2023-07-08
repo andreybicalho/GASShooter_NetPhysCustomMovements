@@ -30,34 +30,55 @@ struct PHYSCUSTOMMOVEMENTS_API FPhysCustomMovement
 {
 	GENERATED_USTRUCT_BODY()
 
+public:
+
+	TWeakObjectPtr<UCharacterMovementComponent> CharacterMovementComponent;
+
+	/** Name of the custom movement. */
+	UPROPERTY()
+	FName MovementName;
+
+	/** Time elapsed so far for this movement */
+	UPROPERTY()
+	float CurrentTime;
+
+	/** Whether or not this movement is running */
+	UPROPERTY()
+	bool bIsActive;
+
+	/** overrides the maximum speed for this movement mode */
+	UPROPERTY()
+	float MaxSpeed;
+
+	/** overrides the maximum acceleration for this movement mode */
+	UPROPERTY()
+	float MaxAcceleration;
+
+	/** overrides the maximum braking deceleration for this movement mode */
+	UPROPERTY()
+	float MaxBrakingDeceleration;
+
+	EMovementMode FallbackMovementMode = EMovementMode::MOVE_Falling;
+
+	FPhysCustomMovementDelegate OnCustomMovementEnd;
+
 private:
+
 	// Selected custom movement mode flag: this will be set by the character movement component and must match the selected compressed flag
 	uint8 CustomModeFlag;
 
 public:
-	/** Name of the custom movement. */
-	UPROPERTY()
-	FName MovementName = NAME_None;
 
-	/** Time elapsed so far for this movement */
-	UPROPERTY()
-	float CurrentTime = 0.f;
-
-	/** Whether or not this movement is running */
-	UPROPERTY()
-	bool bIsActive = false;
-
-	/** overrides the maximum speed for this movement mode */
-	UPROPERTY()
-	float MaxSpeed = 999.f;
-
-	TWeakObjectPtr<UCharacterMovementComponent> CharacterMovementComponent = nullptr;
-
-	FPhysCustomMovementDelegate OnCustomMovementEnd;
-
-	EMovementMode FallbackMovementMode = EMovementMode::MOVE_Falling;
-
-	FPhysCustomMovement();
+	FPhysCustomMovement()
+		: CharacterMovementComponent(nullptr)
+		, MovementName(NAME_None)
+		, CurrentTime(0.f)
+		, bIsActive(false)
+		, MaxSpeed(999.f)
+		, MaxAcceleration(999.f)
+		, MaxBrakingDeceleration(0.f)
+		, FallbackMovementMode(EMovementMode::MOVE_Falling)
+	{}
 
 	virtual ~FPhysCustomMovement() {}
 
@@ -67,7 +88,7 @@ public:
 	virtual void EndMovement();
 
 	// checks if movement can be done; movement mode will change whenever this fails.
-	virtual bool CanDoMovement(const float deltaTime) const { return true; };
+	virtual bool CanDoMovement(const float deltaTime) const { return true; }
 
 	// main update function, this is where you override to code your custom movement
 	virtual void UpdateMovement(const float deltaTime, const FVector& oldVelocity, FVector& outVelocity)
@@ -79,19 +100,25 @@ public:
 
 		// ... and don't forget to clamp to the maximum speed
 		outVelocity = outVelocity.GetClampedToMaxSize(GetMaxSpeed());
-	};
+	}
 
 	// overrides the maximum speed for this movement mode
-	virtual float GetMaxSpeed() const { return MaxSpeed; };
+	virtual float GetMaxSpeed() const { return MaxSpeed; }
+
+	// overrides the maximum acceleration for this movement mode
+	virtual float GetMaxAcceleration() const { return MaxAcceleration; }
+
+	// overrides the maximum braking deceleration for this movement mode
+	virtual float GetMaxBrakingDeceleration() const { return MaxBrakingDeceleration; }
 
 	// return the custom movement mode flag that was reserved for this custom movement
-	uint8 GetCustomModeFlag() const { return CustomModeFlag; };
+	uint8 GetCustomModeFlag() const { return CustomModeFlag; }
 
 	/** @return the CurrentTime - amount of time elapsed so far for this movement */
-	float GetTime() const { return CurrentTime; };
+	float GetTime() const { return CurrentTime; }
 
 	/** True when this movement is running. */
-	bool IsActive() const { return bIsActive; };
+	bool IsActive() const { return bIsActive; }
 
 	virtual UScriptStruct* GetTypeStruct() const;
 };

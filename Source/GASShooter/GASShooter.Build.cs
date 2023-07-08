@@ -8,7 +8,7 @@ public class GASShooter : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "PhysCustomMovements" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "NetCore", "PhysCustomMovements" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {
 			"Slate",

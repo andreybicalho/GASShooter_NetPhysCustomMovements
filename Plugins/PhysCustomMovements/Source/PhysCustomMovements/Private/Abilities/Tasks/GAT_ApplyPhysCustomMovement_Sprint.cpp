@@ -10,7 +10,7 @@ UGAT_ApplyPhysCustomMovement_Sprint::UGAT_ApplyPhysCustomMovement_Sprint(const F
 {
 }
 
-UGAT_ApplyPhysCustomMovement_Sprint* UGAT_ApplyPhysCustomMovement_Sprint::PhysSprint(UGameplayAbility* OwningAbility, FName TaskInstanceName, float inMaxSpeed)
+UGAT_ApplyPhysCustomMovement_Sprint* UGAT_ApplyPhysCustomMovement_Sprint::PhysSprint(UGameplayAbility* OwningAbility, FName TaskInstanceName, const float inMaxSpeed, const float inMaxAcceleration, const float MaxBrakingDeceleration)
 {
 	UGAT_ApplyPhysCustomMovement_Sprint* abilityTask = NewAbilityTask<UGAT_ApplyPhysCustomMovement_Sprint>(OwningAbility, TaskInstanceName);
 
@@ -18,6 +18,8 @@ UGAT_ApplyPhysCustomMovement_Sprint* UGAT_ApplyPhysCustomMovement_Sprint::PhysSp
 	{
 		abilityTask->CustomMovementName = TaskInstanceName;
 		abilityTask->MaxSpeed = inMaxSpeed;
+		abilityTask->MaxAcceleration = inMaxAcceleration;
+		abilityTask->MaxBrakingDeceleration = MaxBrakingDeceleration;
 		abilityTask->InitAndApply();
 
 		return abilityTask;
@@ -39,6 +41,8 @@ void UGAT_ApplyPhysCustomMovement_Sprint::InitAndApply()
 			movement->MovementName = CustomMovementName;
 			movement->CharacterMovementComponent = CharacterMovementComponent;
 			movement->MaxSpeed = MaxSpeed;
+			movement->MaxAcceleration = MaxAcceleration;
+			movement->MaxBrakingDeceleration = MaxBrakingDeceleration;
 			movement->OnCustomMovementEnd.AddDynamic(this, &ThisClass::OnPhysCustomMovementEnded);
 
 			Move(PhysCustomMovement, movement);

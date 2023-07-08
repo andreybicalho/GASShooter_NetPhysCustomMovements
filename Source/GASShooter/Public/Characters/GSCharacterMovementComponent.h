@@ -1,4 +1,4 @@
-// Copyright 2022 Andrey Bicalho.
+// Copyright 2020 Dan Kestranek.
 
 #pragma once
 
@@ -6,9 +6,8 @@
 #include "Components/PMCharacterMovementComponent.h"
 #include "GSCharacterMovementComponent.generated.h"
 
-
 /**
- * 
+ *
  */
 UCLASS()
 class GASSHOOTER_API UGSCharacterMovementComponent : public UPMCharacterMovementComponent

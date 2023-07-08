@@ -31,7 +31,7 @@ public:
 	virtual void OnDestroy(bool AbilityIsEnding) override;
 
 	UFUNCTION(BlueprintCallable, Category = "Ability|Tasks", meta = (HidePin = "OwningAbility", DefaultToSelf = "OwningAbility", BlueprintInternalUseOnly = "TRUE"))
-	static UGAT_ApplyPhysCustomMovement_NonDeterministicMove* PhysNonDeterministicMove(UGameplayAbility* OwningAbility, FName TaskInstanceName, float inInitialTimeToWait, float inMaxSpeed);
+	static UGAT_ApplyPhysCustomMovement_NonDeterministicMove* PhysNonDeterministicMove(UGameplayAbility* OwningAbility, FName TaskInstanceName, float inInitialTimeToWait, const float inMaxSpeed, const float inMaxAcceleration, const float MaxBrakingDeceleration);
 
 	UFUNCTION(BlueprintCallable)
 	void SetWaitTime(const float waitTime);

@@ -18,7 +18,7 @@ public:
 	UGAT_ApplyPhysCustomMovement_Sprint(const FObjectInitializer& ObjectInitializer);
 
 	UFUNCTION(BlueprintCallable, Category = "Ability|Tasks", meta = (HidePin = "OwningAbility", DefaultToSelf = "OwningAbility", BlueprintInternalUseOnly = "TRUE"))
-	static UGAT_ApplyPhysCustomMovement_Sprint* PhysSprint(UGameplayAbility* OwningAbility, FName TaskInstanceName, float inMaxSpeed);
+	static UGAT_ApplyPhysCustomMovement_Sprint* PhysSprint(UGameplayAbility* OwningAbility, FName TaskInstanceName, const float inMaxSpeed, const float inMaxAcceleration, const float MaxBrakingDeceleration);
 
 protected:
 	virtual void InitAndApply() override;

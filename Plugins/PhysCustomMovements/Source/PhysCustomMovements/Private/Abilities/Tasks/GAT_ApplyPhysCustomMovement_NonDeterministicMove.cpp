@@ -23,7 +23,7 @@ void UGAT_ApplyPhysCustomMovement_NonDeterministicMove::OnDestroy(bool AbilityIs
 	Super::OnDestroy(AbilityIsEnding);
 }
 
-UGAT_ApplyPhysCustomMovement_NonDeterministicMove* UGAT_ApplyPhysCustomMovement_NonDeterministicMove::PhysNonDeterministicMove(UGameplayAbility* OwningAbility, FName TaskInstanceName, float inInitialTimeToWait, float inMaxSpeed)
+UGAT_ApplyPhysCustomMovement_NonDeterministicMove* UGAT_ApplyPhysCustomMovement_NonDeterministicMove::PhysNonDeterministicMove(UGameplayAbility* OwningAbility, FName TaskInstanceName, float inInitialTimeToWait, const float inMaxSpeed, const float inMaxAcceleration, const float MaxBrakingDeceleration)
 {
 	UGAT_ApplyPhysCustomMovement_NonDeterministicMove* abilityTask = NewAbilityTask<UGAT_ApplyPhysCustomMovement_NonDeterministicMove>(OwningAbility, TaskInstanceName);
 
@@ -31,6 +31,8 @@ UGAT_ApplyPhysCustomMovement_NonDeterministicMove* UGAT_ApplyPhysCustomMovement_
 	{
 		abilityTask->CustomMovementName = TaskInstanceName;
 		abilityTask->MaxSpeed = inMaxSpeed;
+		abilityTask->MaxAcceleration = inMaxAcceleration;
+		abilityTask->MaxBrakingDeceleration = MaxBrakingDeceleration;
         abilityTask->InitialTimeToWait = inInitialTimeToWait;
 		abilityTask->InitAndApply();
 
@@ -77,6 +79,8 @@ void UGAT_ApplyPhysCustomMovement_NonDeterministicMove::InitAndApply()
 			movement->MovementName = CustomMovementName;
 			movement->CharacterMovementComponent = CharacterMovementComponent;
 			movement->MaxSpeed = MaxSpeed;
+			movement->MaxAcceleration = MaxAcceleration;
+			movement->MaxBrakingDeceleration = MaxBrakingDeceleration;
 			movement->TimeToWait = InitialTimeToWait;
 			movement->OnCustomMovementEnd.AddDynamic(this, &ThisClass::OnPhysCustomMovementEnded);
 			movement->OnReachedTime.AddDynamic(this, &ThisClass::OnPhysCustomMovementReachedTime);

@@ -34,7 +34,11 @@ protected:
 
 	FName CustomMovementName;
 
-	float MaxSpeed = 2022.f;
+	float MaxSpeed;
+
+	float MaxAcceleration;
+
+	float MaxBrakingDeceleration;
 
 	TSharedPtr<FPhysCustomMovement> PhysCustomMovement;
 

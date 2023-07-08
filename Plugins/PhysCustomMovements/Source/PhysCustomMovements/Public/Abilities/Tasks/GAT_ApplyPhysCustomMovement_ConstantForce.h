@@ -20,7 +20,7 @@ public:
 	UGAT_ApplyPhysCustomMovement_ConstantForce(const FObjectInitializer& ObjectInitializer);
 
 	UFUNCTION(BlueprintCallable, Category = "Ability|Tasks", meta = (HidePin = "OwningAbility", DefaultToSelf = "OwningAbility", BlueprintInternalUseOnly = "TRUE"))
-	static UGAT_ApplyPhysCustomMovement_ConstantForce* PhysConstantForce(UGameplayAbility* OwningAbility, FName TaskInstanceName, const FVector& inForce, float inMaxSpeed);
+	static UGAT_ApplyPhysCustomMovement_ConstantForce* PhysConstantForce(UGameplayAbility* OwningAbility, FName TaskInstanceName, const FVector& inForce, const float inMaxSpeed, const float inMaxAcceleration, const float MaxBrakingDeceleration);
 
 protected:
 	virtual void InitAndApply() override;

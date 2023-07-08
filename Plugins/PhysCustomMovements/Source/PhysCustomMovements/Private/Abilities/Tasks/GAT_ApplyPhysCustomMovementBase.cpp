@@ -4,6 +4,8 @@
 #include "Abilities/Tasks/GAT_ApplyPhysCustomMovementBase.h"
 #include "Components/PMCharacterMovementComponent.h"
 
+#define VERBOSE_DEBUG_PHYS_BASE_ABILITY_TASK !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+
 UGAT_ApplyPhysCustomMovementBase::UGAT_ApplyPhysCustomMovementBase(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
@@ -13,13 +15,13 @@ UGAT_ApplyPhysCustomMovementBase::UGAT_ApplyPhysCustomMovementBase(const FObject
 
 void UGAT_ApplyPhysCustomMovementBase::OnPhysCustomMovementEnded()
 {
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#if VERBOSE_DEBUG_PHYS_BASE_ABILITY_TASK
 	UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: Phys Custom Movement %s has finished on ability task %s"),
 		ANSI_TO_TCHAR(__FUNCTION__),
 		GET_ACTOR_LOCAL_ROLE_FSTRING(GetAvatarActor()),
 		PhysCustomMovement.IsValid() ? *PhysCustomMovement->MovementName.ToString() : TEXT("Invalid"),
 		*CustomMovementName.ToString());
-#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#endif // VERBOSE_DEBUG_PHYS_BASE_ABILITY_TASK
 
 	Finish();
 }
@@ -75,13 +77,13 @@ void UGAT_ApplyPhysCustomMovementBase::OnDestroy(bool AbilityIsEnding)
 
 	if (PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
 	{
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#if VERBOSE_DEBUG_PHYS_BASE_ABILITY_TASK
 		UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: Ability Task %s is being destroyed, but Phys Custom Movement %s is still valid and active. Movement mode will be set to Falling."),
 			ANSI_TO_TCHAR(__FUNCTION__),
 			GET_ACTOR_LOCAL_ROLE_FSTRING(GetAvatarActor()),
 			*CustomMovementName.ToString(),
 			*PhysCustomMovement->MovementName.ToString());
-#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#endif // VERBOSE_DEBUG_PHYS_BASE_ABILITY_TASK
 
 		if (CharacterMovementComponent.IsValid())
 		{

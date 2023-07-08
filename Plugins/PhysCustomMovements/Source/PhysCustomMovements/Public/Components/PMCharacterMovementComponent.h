@@ -99,6 +99,8 @@ public:
 	// UCharacterMovementComponent API
 	virtual void PhysCustom(float deltaTime, int32 Iterations) override;
 	virtual float GetMaxSpeed() const override;
+	virtual float GetMaxBrakingDeceleration() const override;
+	virtual float GetMaxAcceleration() const;
 	virtual void UpdateFromCompressedFlags(uint8 Flags) override;
 	virtual class FNetworkPredictionData_Client* GetPredictionData_Client() const override;
 	// ~UCharacterMovementComponent

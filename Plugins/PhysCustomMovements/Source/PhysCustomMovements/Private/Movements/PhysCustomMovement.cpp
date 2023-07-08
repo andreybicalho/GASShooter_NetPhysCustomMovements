@@ -3,16 +3,6 @@
 #include "Movements/PhysCustomMovement.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
-FPhysCustomMovement::FPhysCustomMovement()
-{
-	CharacterMovementComponent = nullptr;
-	MaxSpeed = 999.f;
-	CurrentTime = 0.f;
-	bIsActive = false;
-	MovementName = NAME_None;
-	FallbackMovementMode = EMovementMode::MOVE_Falling;
-}
-
 bool FPhysCustomMovement::BeginMovement(ACharacter* inCharacter, UCharacterMovementComponent* inCharacterMovementComponent, const uint8 inCustomModeFlag)
 {
 	if (inCharacterMovementComponent)

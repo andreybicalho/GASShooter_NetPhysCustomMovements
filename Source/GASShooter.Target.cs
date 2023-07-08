@@ -9,6 +9,7 @@ public class GASShooterTarget : TargetRules
 	{
 		Type = TargetType.Game;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
-		ExtraModuleNames.AddRange( new string[] { "GASShooter" } );
+        IncludeOrderVersion = EngineIncludeOrderVersion.Latest;
+        ExtraModuleNames.AddRange( new string[] { "GASShooter" } );
 	}
 }

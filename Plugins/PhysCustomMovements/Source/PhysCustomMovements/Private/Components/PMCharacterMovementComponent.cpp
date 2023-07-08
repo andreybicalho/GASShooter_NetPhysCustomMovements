@@ -8,6 +8,8 @@ DEFINE_LOG_CATEGORY(LogPhysCustomMovement);
 
 DECLARE_CYCLE_STAT(TEXT("Char PhysCustom"), STAT_UPMCharacterMovementComponent_PhysCustom, STATGROUP_Character);
 
+#define PMC_DEBUG_VERBOSE !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+
 UPMCharacterMovementComponent::UPMCharacterMovementComponent(const FObjectInitializer& ObjectInitializer) 
 	: UCharacterMovementComponent(ObjectInitializer)
 {
@@ -25,6 +27,26 @@ float UPMCharacterMovementComponent::GetMaxSpeed() const
 	}
 
 	return Super::GetMaxSpeed();
+}
+
+float UPMCharacterMovementComponent::GetMaxBrakingDeceleration() const
+{
+	if (bWantsPhysCustomMovement && PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
+	{
+		return PhysCustomMovement->GetMaxBrakingDeceleration();
+	}
+
+	return Super::GetMaxBrakingDeceleration();
+}
+
+float UPMCharacterMovementComponent::GetMaxAcceleration() const
+{
+	if (bWantsPhysCustomMovement && PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
+	{
+		return PhysCustomMovement->GetMaxAcceleration();
+	}
+
+	return Super::GetMaxAcceleration();
 }
 
 void UPMCharacterMovementComponent::UpdateFromCompressedFlags(uint8 Flags)
@@ -88,12 +110,12 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 			if (!PhysCustomMovement->IsActive())
 			{
 				// TODO: check if this is even reachable with the new flow
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#if PMC_DEBUG_VERBOSE
 				UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: Movement Mode is valid but it is inactive. Movement mode will be set to %s."), 
 					ANSI_TO_TCHAR(__FUNCTION__),
 					GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 					*UEnum::GetValueAsString(PhysCustomMovement->FallbackMovementMode));
-#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#endif // PMC_DEBUG_VERBOSE
 				SetMovementMode(PhysCustomMovement->FallbackMovementMode);
 				StartNewPhysics(deltaTime, Iterations);
 				return;
@@ -101,62 +123,75 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 
 			if (PhysCustomMovement->CanDoMovement(deltaTime))
 			{
-				// TODO: should only update velocity if we didn't teleport and if we don't have any root motion source?				
-				//if (!bJustTeleported && !HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
+				// we shouldn't update velocity if has just teleported or has root motion
+				if (bJustTeleported || HasAnimRootMotion() || CurrentRootMotion.HasOverrideVelocity())
+				{
+#if PMC_DEBUG_VERBOSE
+					UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: %s will not update velocity due to following: bJustTeleported: %d or HasAnimRootMotion: %d or CurrentRootMotion Has Override Velocity: %d"),
+						ANSI_TO_TCHAR(__FUNCTION__),
+						GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
+						*PhysCustomMovement->MovementName.ToString(),
+						bJustTeleported,
+						HasAnimRootMotion(),
+						CurrentRootMotion.HasOverrideVelocity());
+#endif // PMC_DEBUG_VERBOSE
+					return;
+				}
 
+				// Apply acceleration
+				const float friction = 0.f; // TODO: create a custom friction: PhysCustomMovement->GetFriction() (something like: GetPhysicsVolume()->FluidFriction * CustomMovementFrictionMultiplier)
+				CalcVelocity(deltaTime, friction, false, GetMaxBrakingDeceleration());
+
+				// override velocity with the custom movement logic
 				const FVector oldVelocity = Velocity;
 				PhysCustomMovement->UpdateMovement(deltaTime, oldVelocity, Velocity);
 
-				// TODO: we probably want to call take into account things like braking, friction, deceleration and also RVO stuff (although RVO only works for walking and navwalking modes) check CalcVelocity usage:
-				/*const float friction = 0.5f * GetPhysicsVolume()->FluidFriction;
-				CalcVelocity(deltaTime, friction, true, GetMaxBrakingDeceleration());*/
-
+				// move
 				const FVector adjustedVelocity = Velocity * deltaTime;
 				const FVector oldLocation = UpdatedComponent->GetComponentLocation();
 				FHitResult hit(1.f);
 				SafeMoveUpdatedComponent(adjustedVelocity, UpdatedComponent->GetComponentQuat(), true, hit);
 
 				// update velocity with what we really moved
-				Velocity = (UpdatedComponent->GetComponentLocation() - oldLocation) / deltaTime;
+				Velocity = (UpdatedComponent->GetComponentLocation() - oldLocation) / deltaTime; // v = dx / dt
 				UpdateComponentVelocity();
 
-				// update acceleration
+				// Update acceleration (NOTE: if this is done before we update custom movement we can't have inputs during the movement)
 				Acceleration = GetMaxAcceleration() * Velocity.GetSafeNormal();
 				Acceleration = Acceleration.GetClampedToMaxSize(GetMaxAcceleration());
-
 				AnalogInputModifier = ComputeAnalogInputModifier(); // recompute since acceleration have changed.
 			}
 			else
 			{
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#if PMC_DEBUG_VERBOSE
 				UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: Movement %s requirements has failed! Movement mode will be set to %s."),
 					ANSI_TO_TCHAR(__FUNCTION__),
 					GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 					*PhysCustomMovement->MovementName.ToString(),
 					*UEnum::GetValueAsString(PhysCustomMovement->FallbackMovementMode));
-#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#endif // PMC_DEBUG_VERBOSE
 				SetMovementMode(PhysCustomMovement->FallbackMovementMode);
 				StartNewPhysics(deltaTime, Iterations);
 			}
 		}
 		else
 		{
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#if PMC_DEBUG_VERBOSE
 			UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: Phys Custom Movement FLAG is Set but movement is invalid."),
 				ANSI_TO_TCHAR(__FUNCTION__),
 				GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()));
-#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#endif // PMC_DEBUG_VERBOSE
 			// TODO: what to do? wait until realizing that physcustom should not run or start new physics?
 			//StartNewPhysics(deltaTime, Iterations);
 		}
 	}
 	else
 	{
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#if PMC_DEBUG_VERBOSE
 		UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: CustomMovementMode doesn't match our Phys Custom Movement Mode Flag. Are you sure you want to run another custom movement?"),
 			ANSI_TO_TCHAR(__FUNCTION__),
 			GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()));
-#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#endif // PMC_DEBUG_VERBOSE
 	}
 
 	// Not sure if this is needed
@@ -167,13 +202,13 @@ bool UPMCharacterMovementComponent::StartPhysCustomMovement(TSharedPtr<FPhysCust
 {
 	if (PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
 	{
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#if PMC_DEBUG_VERBOSE
 		UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: %s is still active. If you want to start %s, wait till that movement is done or manually stop it."),
 			ANSI_TO_TCHAR(__FUNCTION__),
 			GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 			*PhysCustomMovement->MovementName.ToString(),
 			*inPhysCustomMovement->MovementName.ToString());
-#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#endif // PMC_DEBUG_VERBOSE
 		return false;
 	}
 
@@ -181,11 +216,11 @@ bool UPMCharacterMovementComponent::StartPhysCustomMovement(TSharedPtr<FPhysCust
 
 	if (inPhysCustomMovement.IsValid())
 	{
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#if PMC_DEBUG_VERBOSE
 		UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: Starting Movement: %s"),
 			ANSI_TO_TCHAR(__FUNCTION__), GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 			*PhysCustomMovement->MovementName.ToString());
-#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#endif // PMC_DEBUG_VERBOSE
 		bWantsPhysCustomMovement = PhysCustomMovement->BeginMovement(
 			GetCharacterOwner(),
 			this,
@@ -198,12 +233,12 @@ bool UPMCharacterMovementComponent::StartPhysCustomMovement(TSharedPtr<FPhysCust
 void UPMCharacterMovementComponent::StopPhysCustomMovement()
 {
 	bWantsPhysCustomMovement = false;
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#if PMC_DEBUG_VERBOSE
 	UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: Ending Movement: %s"),
 		ANSI_TO_TCHAR(__FUNCTION__),
 		GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 		PhysCustomMovement.IsValid() ? *PhysCustomMovement->MovementName.ToString() : TEXT("Invalid"));
-#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#endif // PMC_DEBUG_VERBOSE
 	if (PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
 	{
 		PhysCustomMovement->EndMovement();
@@ -233,14 +268,14 @@ void UPMCharacterMovementComponent::OnMovementModeChanged(EMovementMode Previous
 		// TODO: should check if we are changing from a phys custom movement to another phys custom movement?
 		if (PreviousMovementMode == MOVE_Custom && PreviousCustomMode == GetPhysCustomMovementModeFlag())
 		{
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#if PMC_DEBUG_VERBOSE
 			UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: Movement Mode Changed from %s to %s during Movement %s. Requesting to Stop the Phys Custom Movement..."),
 				ANSI_TO_TCHAR(__FUNCTION__),
 				GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 				*UEnum::GetValueAsString(PreviousMovementMode),
 				*UEnum::GetValueAsString(MovementMode),
 				PhysCustomMovement.IsValid() ? *PhysCustomMovement->MovementName.ToString() : TEXT("Invalid"));
-#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#endif // PMC_DEBUG_VERBOSE
 
 			StopPhysCustomMovement();
 		}

@@ -26,7 +26,8 @@ public:
 	/** Launch Character with velocity. */
 	UFUNCTION(BlueprintCallable, Category = "Ability|Tasks", meta = (HidePin = "OwningAbility", DefaultToSelf = "OwningAbility", BlueprintInternalUseOnly = "TRUE"))
 	static UGAT_ApplyPhysCustomMovement_Launch* PhysLaunch(UGameplayAbility* OwningAbility, FName TaskInstanceName,
-												const FVector& inLaunchVelocity, bool bInXYOverride, bool bInZOverride, float inMaxSpeed);
+												const FVector& inLaunchVelocity, bool bInXYOverride, bool bInZOverride, 
+												const float inMaxSpeed, const float inMaxAcceleration, const float MaxBrakingDeceleration);
 
 protected:
 	virtual void InitAndApply() override;
