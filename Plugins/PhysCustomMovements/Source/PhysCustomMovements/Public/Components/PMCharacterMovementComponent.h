@@ -107,7 +107,7 @@ public:
 
 	// Physics Custom Movement API
 	/** Starts the Phys Custom Movement. */
-	bool StartPhysCustomMovement(TSharedPtr<FPhysCustomMovement> inPhysCustomMovement);
+	bool StartPhysCustomMovement(const TSharedPtr<FPhysCustomMovement>& inPhysCustomMovement);
 
 	UFUNCTION(BlueprintCallable, Category = "Phys Custom Movement")
 	bool IsPhysCustomMovementActive() const;

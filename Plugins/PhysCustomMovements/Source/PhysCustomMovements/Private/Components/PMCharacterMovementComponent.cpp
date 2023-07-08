@@ -123,15 +123,14 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 
 			if (PhysCustomMovement->CanDoMovement(deltaTime))
 			{
-				// we shouldn't update velocity if has just teleported or has root motion
-				if (bJustTeleported || HasAnimRootMotion() || CurrentRootMotion.HasOverrideVelocity())
+				// TODO should also prevent to update velocity if has just teleported (bJustTeleported)?
+				if (HasAnimRootMotion() || CurrentRootMotion.HasOverrideVelocity())
 				{
 #if PMC_DEBUG_VERBOSE
-					UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: %s will not update velocity due to following: bJustTeleported: %d or HasAnimRootMotion: %d or CurrentRootMotion Has Override Velocity: %d"),
+					UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: %s will not update velocity due to following: HasAnimRootMotion: %d or CurrentRootMotion Has Override Velocity: %d"),
 						ANSI_TO_TCHAR(__FUNCTION__),
 						GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 						*PhysCustomMovement->MovementName.ToString(),
-						bJustTeleported,
 						HasAnimRootMotion(),
 						CurrentRootMotion.HasOverrideVelocity());
 #endif // PMC_DEBUG_VERBOSE
@@ -185,20 +184,12 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 			//StartNewPhysics(deltaTime, Iterations);
 		}
 	}
-	else
-	{
-#if PMC_DEBUG_VERBOSE
-		UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: CustomMovementMode doesn't match our Phys Custom Movement Mode Flag. Are you sure you want to run another custom movement?"),
-			ANSI_TO_TCHAR(__FUNCTION__),
-			GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()));
-#endif // PMC_DEBUG_VERBOSE
-	}
 
 	// Not sure if this is needed
 	Super::PhysCustom(deltaTime, Iterations);
 }
 
-bool UPMCharacterMovementComponent::StartPhysCustomMovement(TSharedPtr<FPhysCustomMovement> inPhysCustomMovement)
+bool UPMCharacterMovementComponent::StartPhysCustomMovement(const TSharedPtr<FPhysCustomMovement>& inPhysCustomMovement)
 {
 	if (PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
 	{
