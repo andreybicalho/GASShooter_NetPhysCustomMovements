@@ -103,7 +103,7 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 	//}
 	// ~end physics sub-stepping
 
-	if (CustomMovementMode == GetPhysCustomMovementModeFlag())
+	if (MovementMode == EMovementMode::MOVE_Custom && CustomMovementMode == GetPhysCustomMovementModeFlag())
 	{
 		if (PhysCustomMovement.IsValid())
 		{
@@ -193,8 +193,9 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 				GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 				Iterations);
 #endif // PMC_DEBUG_VERBOSE
-			// TODO: what to do? wait until realizing that physcustom should not run or start new physics?
-			//StartNewPhysics(deltaTime, Iterations);
+			SetMovementMode(EMovementMode::MOVE_Falling);
+			StartNewPhysics(deltaTime, Iterations);
+			return;
 		}
 	}
 
