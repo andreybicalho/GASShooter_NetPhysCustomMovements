@@ -32,3 +32,31 @@ UScriptStruct* FPhysCustomMovement::GetTypeStruct() const
 {
 	return FPhysCustomMovement::StaticStruct();
 }
+
+bool FPhysCustomMovement::SkipThisUpdate(const float deltaTime)
+{
+	if (bSkipMovementUpdates)
+	{
+		UpdateSkipCount++;
+		TimeSkippingMovement += deltaTime;
+
+		if (UpdateSkipCount > MaxNumUpdateSkips) // TODO: find a better way of setting this threshold, maybe based on the time we get updates from the server
+		{
+			ResetUpdateSkipping();
+		}
+	}
+
+	return bSkipMovementUpdates;
+}
+
+void FPhysCustomMovement::HoldMovementUpdates()
+{
+	bSkipMovementUpdates = true;
+}
+
+void FPhysCustomMovement::ResetUpdateSkipping()
+{
+	TimeSkippingMovement = 0.f;
+	UpdateSkipCount = 0;
+	bSkipMovementUpdates = false;
+}

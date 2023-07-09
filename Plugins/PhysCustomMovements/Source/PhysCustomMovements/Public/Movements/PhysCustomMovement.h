@@ -62,6 +62,16 @@ public:
 
 	FPhysCustomMovementDelegate OnCustomMovementEnd;
 
+	int32 UpdateSkipCount;
+
+	int32 MaxNumUpdateSkips;
+
+	bool bSkipMovementUpdates;
+
+	float TimeSkippingMovement;
+
+	float LocationErrorToleranceThreshold;
+
 private:
 
 	// Selected custom movement mode flag: this will be set by the character movement component and must match the selected compressed flag
@@ -78,6 +88,11 @@ public:
 		, MaxAcceleration(999.f)
 		, MaxBrakingDeceleration(0.f)
 		, FallbackMovementMode(EMovementMode::MOVE_Falling)
+		, UpdateSkipCount(0)
+		, MaxNumUpdateSkips(16)
+		, bSkipMovementUpdates(false)
+		, TimeSkippingMovement(0.f)
+		, LocationErrorToleranceThreshold(20.f)
 	{}
 
 	virtual ~FPhysCustomMovement() {}
@@ -121,4 +136,10 @@ public:
 	bool IsActive() const { return bIsActive; }
 
 	virtual UScriptStruct* GetTypeStruct() const;
+
+	bool SkipThisUpdate(const float deltaTime);
+
+	void HoldMovementUpdates();
+
+	void ResetUpdateSkipping();
 };

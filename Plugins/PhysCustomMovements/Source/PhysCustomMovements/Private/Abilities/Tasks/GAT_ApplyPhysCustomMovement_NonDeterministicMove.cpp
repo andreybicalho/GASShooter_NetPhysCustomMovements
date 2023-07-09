@@ -85,7 +85,7 @@ void UGAT_ApplyPhysCustomMovement_NonDeterministicMove::InitAndApply()
 			movement->OnCustomMovementEnd.AddDynamic(this, &ThisClass::OnPhysCustomMovementEnded);
 			movement->OnReachedTime.AddDynamic(this, &ThisClass::OnPhysCustomMovementReachedTime);
 
-			Move(PhysCustomMovement, movement);
+			PhysCustomMovement = movement;
 			bActivated = CharacterMovementComponent->StartPhysCustomMovement(PhysCustomMovement);
 		}
 	}

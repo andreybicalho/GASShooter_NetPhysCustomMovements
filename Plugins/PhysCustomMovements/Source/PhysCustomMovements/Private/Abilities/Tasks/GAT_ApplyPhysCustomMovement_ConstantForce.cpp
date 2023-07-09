@@ -48,7 +48,7 @@ void UGAT_ApplyPhysCustomMovement_ConstantForce::InitAndApply()
 			movement->Force = Force;
 			movement->OnCustomMovementEnd.AddDynamic(this, &ThisClass::OnPhysCustomMovementEnded);
 
-			Move(PhysCustomMovement, movement);
+			PhysCustomMovement = movement;
 			bActivated = CharacterMovementComponent->StartPhysCustomMovement(PhysCustomMovement);
 		}
 	}

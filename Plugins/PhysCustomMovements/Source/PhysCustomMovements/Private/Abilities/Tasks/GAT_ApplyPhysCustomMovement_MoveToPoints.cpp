@@ -51,7 +51,7 @@ void UGAT_ApplyPhysCustomMovement_MoveToPoints::InitAndApply()
 			movement->ConsumePointDistanceThreshold = ConsumePointDistanceThreshold;
 			movement->OnCustomMovementEnd.AddDynamic(this, &ThisClass::OnPhysCustomMovementEnded);
 
-			Move(PhysCustomMovement, movement);
+			PhysCustomMovement = movement;
 			bActivated = CharacterMovementComponent->StartPhysCustomMovement(PhysCustomMovement);
 		}
 	}

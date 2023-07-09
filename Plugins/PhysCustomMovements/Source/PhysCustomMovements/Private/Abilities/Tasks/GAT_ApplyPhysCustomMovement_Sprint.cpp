@@ -45,7 +45,7 @@ void UGAT_ApplyPhysCustomMovement_Sprint::InitAndApply()
 			movement->MaxBrakingDeceleration = MaxBrakingDeceleration;
 			movement->OnCustomMovementEnd.AddDynamic(this, &ThisClass::OnPhysCustomMovementEnded);
 
-			Move(PhysCustomMovement, movement);
+			PhysCustomMovement = movement;
 			bActivated = CharacterMovementComponent->StartPhysCustomMovement(PhysCustomMovement);
 		}
 	}

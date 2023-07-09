@@ -109,7 +109,6 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 		{
 			if (!PhysCustomMovement->IsActive())
 			{
-				// TODO: check if this is even reachable with the new flow
 #if PMC_DEBUG_VERBOSE
 				UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: Movement Mode is valid but it is inactive. Movement mode will be set to %s."), 
 					ANSI_TO_TCHAR(__FUNCTION__),
@@ -123,7 +122,19 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 
 			if (PhysCustomMovement->CanDoMovement(deltaTime))
 			{
-				// TODO should also prevent to update velocity if has just teleported (bJustTeleported)?
+				if (PhysCustomMovement->SkipThisUpdate(deltaTime))
+				{
+#if PMC_DEBUG_VERBOSE
+					UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: Update for movement %s will be skipped to prevent more degradation. Time: %.2fs"),
+						ANSI_TO_TCHAR(__FUNCTION__),
+						GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
+						*PhysCustomMovement->MovementName.ToString(),
+						PhysCustomMovement->TimeSkippingMovement);
+#endif // PMC_DEBUG_VERBOSE
+					return;
+				}
+
+				// TODO: should also prevent to update velocity if has just teleported (bJustTeleported)?
 				if (HasAnimRootMotion() || CurrentRootMotion.HasOverrideVelocity())
 				{
 #if PMC_DEBUG_VERBOSE
@@ -163,11 +174,12 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 			else
 			{
 #if PMC_DEBUG_VERBOSE
-				UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: Movement %s requirements has failed! Movement mode will be set to %s."),
+				UE_LOG(LogPhysCustomMovement, Display, TEXT("%s: %s: Movement %s requirements has failed! Movement mode will be set to %s. Iterations: %d"),
 					ANSI_TO_TCHAR(__FUNCTION__),
 					GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
 					*PhysCustomMovement->MovementName.ToString(),
-					*UEnum::GetValueAsString(PhysCustomMovement->FallbackMovementMode));
+					*UEnum::GetValueAsString(PhysCustomMovement->FallbackMovementMode),
+					Iterations);
 #endif // PMC_DEBUG_VERBOSE
 				SetMovementMode(PhysCustomMovement->FallbackMovementMode);
 				StartNewPhysics(deltaTime, Iterations);
@@ -176,9 +188,10 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 		else
 		{
 #if PMC_DEBUG_VERBOSE
-			UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: Phys Custom Movement FLAG is Set but movement is invalid."),
+			UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: Phys Custom Movement FLAG is Set but movement is invalid. Iterations: %d"),
 				ANSI_TO_TCHAR(__FUNCTION__),
-				GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()));
+				GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
+				Iterations);
 #endif // PMC_DEBUG_VERBOSE
 			// TODO: what to do? wait until realizing that physcustom should not run or start new physics?
 			//StartNewPhysics(deltaTime, Iterations);
@@ -303,6 +316,47 @@ void UPMCharacterMovementComponent::MoveAutonomous(float ClientTimeStamp, float 
 	}
 
 	Super::MoveAutonomous(ClientTimeStamp, DeltaTime, CompressedFlags, NewAccel);
+}
+
+void UPMCharacterMovementComponent::OnClientCorrectionReceived(class FNetworkPredictionData_Client_Character& ClientData, float TimeStamp, FVector NewLocation, FVector NewVelocity, UPrimitiveComponent* NewBase, FName NewBaseBoneName, bool bHasBase, bool bBaseRelativePosition, uint8 ServerMovementMode)
+{
+	if (PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
+	{
+		const FVector clientLocAtCorrectedMove = ClientData.LastAckedMove.IsValid() ? ClientData.LastAckedMove->SavedLocation : UpdatedComponent->GetComponentLocation();
+		const FVector locDiff = clientLocAtCorrectedMove - NewLocation;
+		const float amountDiff = locDiff.Size();
+
+#if PMC_DEBUG_VERBOSE
+		UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: Received %.2f of location error during execution of movement %s."),
+			ANSI_TO_TCHAR(__FUNCTION__),
+			GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
+			amountDiff,
+			PhysCustomMovement.IsValid() ? *PhysCustomMovement->MovementName.ToString() : TEXT(""));
+#endif // PMC_DEBUG_VERBOSE
+
+		if (!locDiff.IsNearlyZero(PhysCustomMovement->LocationErrorToleranceThreshold))
+		{
+			// NewLocation: where the server corrected us to
+			// clientLocAtCorrectedMove: location where client thought they were
+			// locDiff is zero: we already corrected, it basically means "no-op"
+			PhysCustomMovement->HoldMovementUpdates();
+
+#if PMC_DEBUG_VERBOSE
+			UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: Location error (%.2f) exceeded limit (%.2f) and subsequential moves for movement %s will be skipped to prevent more degradation and hopefully get in sync with the server."),
+				ANSI_TO_TCHAR(__FUNCTION__),
+				GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
+				amountDiff,
+				PhysCustomMovement->LocationErrorToleranceThreshold,
+				PhysCustomMovement.IsValid() ? *PhysCustomMovement->MovementName.ToString() : TEXT(""));
+#endif // PMC_DEBUG_VERBOSE
+		}
+		else
+		{
+			PhysCustomMovement->ResetUpdateSkipping();
+		}
+	}
+
+	Super::OnClientCorrectionReceived(ClientData, TimeStamp, NewLocation, NewVelocity, NewBase, NewBaseBoneName, bHasBase, bBaseRelativePosition, ServerMovementMode);
 }
 
 void FPMSavedMove::Clear()
