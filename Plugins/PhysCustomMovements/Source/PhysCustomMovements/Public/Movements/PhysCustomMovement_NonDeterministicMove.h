@@ -43,6 +43,7 @@ struct PHYSCUSTOMMOVEMENTS_API FPhysCustomMovement_NonDeterministicMove : public
 
 	virtual void Clear() override;
 
+	// TODO: if we manage to serialize it we could remove the predicted properties and just use reflection to get and set data
 	/*virtual void SetupBaseFromCustomMovement(const FPhysCustomMovement& physCustomMovement) override;*/
 
 	/*virtual bool NetSerialize(FArchive& ar, UPackageMap* map, bool& bOutSuccess) override;*/

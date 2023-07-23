@@ -179,11 +179,11 @@ bool FPhysCustomMovement::HasBoundPredictedProperties() const
 
 void FPhysCustomMovement::ClearPredictedProperties()
 {
-	/*if (HasBoundPredictedProperties())
+	if (HasBoundPredictedProperties())
 	{
 		for (const FPhysPredictedProperty<uint8>& byteProp : PhysBytes)
 		{
-			if (const FByteProperty* bytePropertyPtr = CastField<FByteProperty>(GetScriptStruct()->FindPropertyByName(byteProp.Name)))
+			if (FByteProperty* bytePropertyPtr = CastField<FByteProperty>(GetScriptStruct()->FindPropertyByName(byteProp.Name)))
 			{
 				void* valuePtr = bytePropertyPtr->ContainerPtrToValuePtr<void>(this);
 				bytePropertyPtr->SetPropertyValue(valuePtr, 0);
@@ -192,7 +192,7 @@ void FPhysCustomMovement::ClearPredictedProperties()
 
 		for (const FPhysPredictedProperty<bool>& boolProp : PhysBooleans)
 		{
-			if (const FBoolProperty* boolPropertyPtr = CastField<FBoolProperty>(GetScriptStruct()->FindPropertyByName(boolProp.Name)))
+			if (FBoolProperty* boolPropertyPtr = CastField<FBoolProperty>(GetScriptStruct()->FindPropertyByName(boolProp.Name)))
 			{
 				void* valuePtr = boolPropertyPtr->ContainerPtrToValuePtr<void>(this);
 				boolPropertyPtr->SetPropertyValue(valuePtr, false);
@@ -201,7 +201,7 @@ void FPhysCustomMovement::ClearPredictedProperties()
 
 		for (const FPhysPredictedProperty<int32>& integerProp : PhysIntegers)
 		{
-			if (const FIntProperty* integerPropPtr = CastField<FIntProperty>(GetScriptStruct()->FindPropertyByName(integerProp.Name)))
+			if (FIntProperty* integerPropPtr = CastField<FIntProperty>(GetScriptStruct()->FindPropertyByName(integerProp.Name)))
 			{
 				void* valuePtr = integerPropPtr->ContainerPtrToValuePtr<void>(this);
 				integerPropPtr->SetPropertyValue(valuePtr, 0);
@@ -210,7 +210,7 @@ void FPhysCustomMovement::ClearPredictedProperties()
 
 		for (const FPhysPredictedProperty<float>& floatProp : PhysFloats)
 		{
-			if (const FFloatProperty* floatPropPtr = CastField<FFloatProperty>(GetScriptStruct()->FindPropertyByName(floatProp.Name)))
+			if (FFloatProperty* floatPropPtr = CastField<FFloatProperty>(GetScriptStruct()->FindPropertyByName(floatProp.Name)))
 			{
 				void* valuePtr = floatPropPtr->ContainerPtrToValuePtr<void>(this);
 				floatPropPtr->SetPropertyValue(valuePtr, 0.f);
@@ -219,7 +219,7 @@ void FPhysCustomMovement::ClearPredictedProperties()
 
 		for (const FPhysPredictedProperty<double>& doubleProp : PhysDoubles)
 		{
-			if (const FDoubleProperty* doublePropPtr = CastField<FDoubleProperty>(GetScriptStruct()->FindPropertyByName(doubleProp.Name)))
+			if (FDoubleProperty* doublePropPtr = CastField<FDoubleProperty>(GetScriptStruct()->FindPropertyByName(doubleProp.Name)))
 			{
 				void* valuePtr = doublePropPtr->ContainerPtrToValuePtr<void>(this);
 				doublePropPtr->SetPropertyValue(valuePtr, 0.f);
@@ -228,7 +228,7 @@ void FPhysCustomMovement::ClearPredictedProperties()
 
 		for (const FPhysPredictedProperty<FVector>& vectorProp : PhysVectors)
 		{
-			if (const FStructProperty* vectorPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(vectorProp.Name)))
+			if (FStructProperty* vectorPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(vectorProp.Name)))
 			{
 				vectorPropPtr->SetValue_InContainer(this, &FVector::ZeroVector);
 			}
@@ -236,7 +236,7 @@ void FPhysCustomMovement::ClearPredictedProperties()
 
 		for (const FPhysPredictedProperty<FVector2D>& vector2DProp : PhysVectors2D)
 		{
-			if (const FStructProperty* vector2DPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(vector2DProp.Name)))
+			if (FStructProperty* vector2DPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(vector2DProp.Name)))
 			{
 				vector2DPropPtr->SetValue_InContainer(this, &FVector2D::ZeroVector);
 			}
@@ -244,7 +244,7 @@ void FPhysCustomMovement::ClearPredictedProperties()
 
 		for (const FPhysPredictedProperty<FVector4>& vector4Prop : PhysVectors4)
 		{
-			if (const FStructProperty* vector4PropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(vector4Prop.Name)))
+			if (FStructProperty* vector4PropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(vector4Prop.Name)))
 			{
 				FVector4 zeroVector4 = FVector4(0);
 				vector4PropPtr->SetValue_InContainer(this, &zeroVector4);
@@ -253,7 +253,7 @@ void FPhysCustomMovement::ClearPredictedProperties()
 
 		for (const FPhysPredictedProperty<FRotator>& rotatorProp : PhysRotators)
 		{
-			if (const FStructProperty* rotatorPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(rotatorProp.Name)))
+			if (FStructProperty* rotatorPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(rotatorProp.Name)))
 			{
 				rotatorPropPtr->SetValue_InContainer(this, &FRotator::ZeroRotator);
 			}
@@ -261,7 +261,7 @@ void FPhysCustomMovement::ClearPredictedProperties()
 
 		for (const FPhysPredictedProperty<FQuat>& quatProp : PhysQuats)
 		{
-			if (const FStructProperty* quatPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(quatProp.Name)))
+			if (FStructProperty* quatPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(quatProp.Name)))
 			{
 				quatPropPtr->SetValue_InContainer(this, &FQuat::Identity);
 			}
@@ -269,12 +269,12 @@ void FPhysCustomMovement::ClearPredictedProperties()
 
 		for (const FPhysPredictedProperty<FGameplayTag>& gameplayTagProp : PhysGameplayTags)
 		{
-			if (const FStructProperty* gameplayTagPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(gameplayTagProp.Name)))
+			if (FStructProperty* gameplayTagPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(gameplayTagProp.Name)))
 			{
 				gameplayTagPropPtr->SetValue_InContainer(this, &FGameplayTag::EmptyTag);
 			}
 		}
-	}*/
+	}
 
 	PhysBytes.Empty();
 	PhysBooleans.Empty();
@@ -352,6 +352,7 @@ void FPhysCustomMovement::SetupPredictedProperties(FPhysCustomMovement& outPhysC
 			const float value = floatPropPtr->GetPropertyValue(valuePtr);
 			floatPredProp.Value = value;
 			outPhysCustomMovement.PhysFloats.Add(floatPredProp);
+			//outPhysCustomMovement.PhysFloats.Add(FPhysPredictedProperty(floatPredProp.Name, value));
 		}
 	}
 
@@ -527,7 +528,7 @@ void FPhysCustomMovement::ReflectFromOtherPredictedProperties(const FPhysCustomM
 	// use unreal reflection system to copy all properties names in the array to member variables
 	for (const FPhysPredictedProperty<uint8>& byteProp : otherPhysCustomMovement.PhysBytes)
 	{
-		if (const FByteProperty* bytePropertyPtr = CastField<FByteProperty>(GetScriptStruct()->FindPropertyByName(byteProp.Name)))
+		if (FByteProperty* bytePropertyPtr = CastField<FByteProperty>(GetScriptStruct()->FindPropertyByName(byteProp.Name)))
 		{
 			void* valuePtr = bytePropertyPtr->ContainerPtrToValuePtr<void>(this);
 			bytePropertyPtr->SetPropertyValue(valuePtr, byteProp.Value);
@@ -536,7 +537,7 @@ void FPhysCustomMovement::ReflectFromOtherPredictedProperties(const FPhysCustomM
 
 	for (const FPhysPredictedProperty<bool>& boolProp : otherPhysCustomMovement.PhysBooleans)
 	{
-		if (const FBoolProperty* boolPropertyPtr = CastField<FBoolProperty>(GetScriptStruct()->FindPropertyByName(boolProp.Name)))
+		if (FBoolProperty* boolPropertyPtr = CastField<FBoolProperty>(GetScriptStruct()->FindPropertyByName(boolProp.Name)))
 		{
 			void* valuePtr = boolPropertyPtr->ContainerPtrToValuePtr<void>(this);
 			boolPropertyPtr->SetPropertyValue(valuePtr, boolProp.Value);
@@ -545,7 +546,7 @@ void FPhysCustomMovement::ReflectFromOtherPredictedProperties(const FPhysCustomM
 
 	for (const FPhysPredictedProperty<int32>& integerProp : otherPhysCustomMovement.PhysIntegers)
 	{
-		if (const FIntProperty* integerPropPtr = CastField<FIntProperty>(GetScriptStruct()->FindPropertyByName(integerProp.Name)))
+		if (FIntProperty* integerPropPtr = CastField<FIntProperty>(GetScriptStruct()->FindPropertyByName(integerProp.Name)))
 		{
 			void* valuePtr = integerPropPtr->ContainerPtrToValuePtr<void>(this);
 			integerPropPtr->SetPropertyValue(valuePtr, integerProp.Value);
@@ -554,7 +555,7 @@ void FPhysCustomMovement::ReflectFromOtherPredictedProperties(const FPhysCustomM
 
 	for (const FPhysPredictedProperty<float>& floatProp : otherPhysCustomMovement.PhysFloats)
 	{
-		if (const FFloatProperty* floatPropPtr = CastField<FFloatProperty>(GetScriptStruct()->FindPropertyByName(floatProp.Name)))
+		if (FFloatProperty* floatPropPtr = CastField<FFloatProperty>(GetScriptStruct()->FindPropertyByName(floatProp.Name)))
 		{
 			void* valuePtr = floatPropPtr->ContainerPtrToValuePtr<void>(this);
 			floatPropPtr->SetPropertyValue(valuePtr, floatProp.Value);
@@ -563,7 +564,7 @@ void FPhysCustomMovement::ReflectFromOtherPredictedProperties(const FPhysCustomM
 
 	for (const FPhysPredictedProperty<double>& doubleProp : otherPhysCustomMovement.PhysDoubles)
 	{
-		if (const FDoubleProperty* doublePropPtr = CastField<FDoubleProperty>(GetScriptStruct()->FindPropertyByName(doubleProp.Name)))
+		if (FDoubleProperty* doublePropPtr = CastField<FDoubleProperty>(GetScriptStruct()->FindPropertyByName(doubleProp.Name)))
 		{
 			void* valuePtr = doublePropPtr->ContainerPtrToValuePtr<void>(this);
 			doublePropPtr->SetPropertyValue(valuePtr, doubleProp.Value);
@@ -572,7 +573,7 @@ void FPhysCustomMovement::ReflectFromOtherPredictedProperties(const FPhysCustomM
 
 	for (const FPhysPredictedProperty<FVector>& vectorProp : otherPhysCustomMovement.PhysVectors)
 	{
-		if (const FStructProperty* vectorPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(vectorProp.Name)))
+		if (FStructProperty* vectorPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(vectorProp.Name)))
 		{
 			vectorPropPtr->SetValue_InContainer(this, &vectorProp.Value);
 		}
@@ -580,7 +581,7 @@ void FPhysCustomMovement::ReflectFromOtherPredictedProperties(const FPhysCustomM
 
 	for (const FPhysPredictedProperty<FVector2D>& vector2DProp : otherPhysCustomMovement.PhysVectors2D)
 	{
-		if (const FStructProperty* vector2DPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(vector2DProp.Name)))
+		if (FStructProperty* vector2DPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(vector2DProp.Name)))
 		{
 			vector2DPropPtr->SetValue_InContainer(this, &vector2DProp.Value);
 		}
@@ -588,7 +589,7 @@ void FPhysCustomMovement::ReflectFromOtherPredictedProperties(const FPhysCustomM
 
 	for (const FPhysPredictedProperty<FVector4>& vector4Prop : otherPhysCustomMovement.PhysVectors4)
 	{
-		if (const FStructProperty* vector4PropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(vector4Prop.Name)))
+		if (FStructProperty* vector4PropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(vector4Prop.Name)))
 		{
 			vector4PropPtr->SetValue_InContainer(this, &vector4Prop.Value);
 		}
@@ -596,7 +597,7 @@ void FPhysCustomMovement::ReflectFromOtherPredictedProperties(const FPhysCustomM
 
 	for (const FPhysPredictedProperty<FRotator>& rotatorProp : otherPhysCustomMovement.PhysRotators)
 	{
-		if (const FStructProperty* rotatorPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(rotatorProp.Name)))
+		if (FStructProperty* rotatorPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(rotatorProp.Name)))
 		{
 			rotatorPropPtr->SetValue_InContainer(this, &rotatorProp.Value);
 		}
@@ -604,7 +605,7 @@ void FPhysCustomMovement::ReflectFromOtherPredictedProperties(const FPhysCustomM
 
 	for (const FPhysPredictedProperty<FQuat>& quatProp : otherPhysCustomMovement.PhysQuats)
 	{
-		if (const FStructProperty* quatPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(quatProp.Name)))
+		if (FStructProperty* quatPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(quatProp.Name)))
 		{
 			quatPropPtr->SetValue_InContainer(this, &quatProp.Value);
 		}
@@ -612,7 +613,7 @@ void FPhysCustomMovement::ReflectFromOtherPredictedProperties(const FPhysCustomM
 
 	for (const FPhysPredictedProperty<FGameplayTag>& gameplayTagProp : otherPhysCustomMovement.PhysGameplayTags)
 	{
-		if (const FStructProperty* gameplayTagPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(gameplayTagProp.Name)))
+		if (FStructProperty* gameplayTagPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(gameplayTagProp.Name)))
 		{
 			gameplayTagPropPtr->SetValue_InContainer(this, &gameplayTagProp.Value);
 		}
@@ -625,36 +626,38 @@ bool FPhysCustomMovement::NetSerialize(FArchive& ar, UPackageMap* map, bool& bOu
 
 	ar << CharacterMovementComponent;
 	//ar << OnCustomMovementEnd; // TODO: should serialize delegates?
-
 	ar << MovementName;
 	ar << bIsActive;
-	ar << CurrentVelocity;
-	ar << CurrentTime;
-	ar << MaxSpeed;
-	ar << MaxAcceleration;
-	ar << MaxBrakingDeceleration;
-	ar << CustomModeFlag;
 
-	uint8 FallbackMovementModeSerialize = static_cast<uint8>(FallbackMovementMode);
-	ar << FallbackMovementModeSerialize;
-	FallbackMovementMode = static_cast<EMovementMode>(FallbackMovementModeSerialize);
-
-	ar << bSkipMovementUpdates;
-
-	// predicted properties
-	if (HasBoundPredictedProperties())
+	// TODO: should we only serialize the rest of the data if we have an active movement?
+	if (bIsActive)
 	{
-		ar << PhysBytes;
-		ar << PhysBooleans;
-		ar << PhysIntegers;
-		ar << PhysFloats;
-		ar << PhysDoubles;
-		ar << PhysVectors;
-		ar << PhysVectors2D;
-		ar << PhysVectors4;
-		ar << PhysRotators;
-		ar << PhysQuats;
-		ar << PhysGameplayTags;
+		ar << CurrentVelocity;
+		ar << CurrentTime;
+		ar << MaxSpeed;
+		ar << MaxAcceleration;
+		ar << MaxBrakingDeceleration;
+		ar << CustomModeFlag;
+
+		uint8 FallbackMovementModeSerialize = static_cast<uint8>(FallbackMovementMode);
+		ar << FallbackMovementModeSerialize;
+		FallbackMovementMode = static_cast<EMovementMode>(FallbackMovementModeSerialize);
+
+		// predicted properties
+		if (HasBoundPredictedProperties())
+		{
+			ar << PhysBytes;
+			ar << PhysBooleans;
+			ar << PhysIntegers;
+			ar << PhysFloats;
+			ar << PhysDoubles;
+			ar << PhysVectors;
+			ar << PhysVectors2D;
+			ar << PhysVectors4;
+			ar << PhysRotators;
+			ar << PhysQuats;
+			ar << PhysGameplayTags;
+		}
 	}
 
 	bOutSuccess = true;

@@ -71,8 +71,8 @@ FNetworkPredictionData_Client* UPMCharacterMovementComponent::GetPredictionData_
 		UPMCharacterMovementComponent* MutableThis = const_cast<UPMCharacterMovementComponent*>(this);
 
 		MutableThis->ClientPredictionData = new FPMNetworkPredictionData_Client(*this);
-		MutableThis->ClientPredictionData->MaxSmoothNetUpdateDist = 92.f;
-		MutableThis->ClientPredictionData->NoSmoothNetUpdateDist = 140.f;
+		//MutableThis->ClientPredictionData->MaxSmoothNetUpdateDist = 92.f;
+		//MutableThis->ClientPredictionData->NoSmoothNetUpdateDist = 140.f;
 	}
 
 	return ClientPredictionData;
@@ -319,7 +319,7 @@ void UPMCharacterMovementComponent::MoveAutonomous(float ClientTimeStamp, float 
 			&& PhysCustomMovement->IsActive() && moveData->MoveData_PhysCustomMovement.IsActive()
 			&& *PhysCustomMovement == moveData->MoveData_PhysCustomMovement)
 		{
-			//PhysCustomMovement->SetupBaseFromCustomMovement(moveData->MoveData_PhysCustomMovement); // TODO: should do this?
+			//PhysCustomMovement->SetupBaseFromCustomMovement(moveData->MoveData_PhysCustomMovement); // TODO: if we manage to serialize properties from the derived movement without the predicted properties arrays, we could just override this and set all data there
 			PhysCustomMovement->ReflectFromOtherPredPropsByMyKeys(moveData->MoveData_PhysCustomMovement);
 		}
 	}
@@ -348,7 +348,7 @@ void UPMCharacterMovementComponent::OnClientCorrectionReceived(class FNetworkPre
 			// NewLocation: where the server corrected us to
 			// clientLocAtCorrectedMove: location where client thought they were
 			// locDiff is zero: we already corrected, it basically means "no-op"
-			PhysCustomMovement->HoldMovementUpdates();
+			//PhysCustomMovement->HoldMovementUpdates(); // TODO: enable this once we finish the predict properties
 
 #if PMC_DEBUG_VERBOSE
 			UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: Location error (%.2f) exceeded limit (%.2f) and subsequential moves for movement %s will be skipped to prevent more degradation and hopefully get in sync with the server."),
@@ -493,7 +493,7 @@ void FPMSavedMove::PrepMoveFor(ACharacter* Character)
 		if (characterMovement->PhysCustomMovement.IsValid())
 		{
 			// NOTE: we should only copy important data since we might be running a movement already and the pointer must point to the same object as in the ability task since there are delegates and maybe other stuff important that can't be overridden.
-			characterMovement->PhysCustomMovement->SetupBaseFromCustomMovement(Saved_PhysCustomMovement);
+			//characterMovement->PhysCustomMovement->SetupBaseFromCustomMovement(Saved_PhysCustomMovement); // TODO: we should be able to setup without using the predicted properties arrays
 			characterMovement->PhysCustomMovement->ReflectFromOtherPredictedProperties(Saved_PhysCustomMovement);
 		}
 	}
@@ -509,7 +509,7 @@ FSavedMovePtr FPMNetworkPredictionData_Client::AllocateNewMove()
 	return FSavedMovePtr(new FPMSavedMove());
 }
 // 
-FPMCharacterNetworkMoveDataContainer::FPMCharacterNetworkMoveDataContainer() : Super()
+FPMCharacterNetworkMoveDataContainer::FPMCharacterNetworkMoveDataContainer() // : Super()
 {
 	NewMoveData = &CustomDefaultMoveData[0];
 	PendingMoveData = &CustomDefaultMoveData[1];

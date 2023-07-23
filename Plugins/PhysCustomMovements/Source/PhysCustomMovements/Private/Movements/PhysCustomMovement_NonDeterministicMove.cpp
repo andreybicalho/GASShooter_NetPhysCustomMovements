@@ -47,7 +47,9 @@ FPhysCustomMovement* FPhysCustomMovement_NonDeterministicMove::Clone() const
 
 void FPhysCustomMovement_NonDeterministicMove::Clear()
 {
-    TimeToWait = 99.f;
+    FPhysCustomMovement::Clear();
+
+	TimeToWait = -1.f;
 	MovementDirectionSign = 1.f;
 	ElapsedTime = 0.f;
 }

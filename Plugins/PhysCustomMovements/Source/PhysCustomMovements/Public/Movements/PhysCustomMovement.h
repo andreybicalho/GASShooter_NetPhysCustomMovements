@@ -16,6 +16,13 @@ struct FPhysPredictedProperty
 	FName Name;
 	T Value;
 
+	FPhysPredictedProperty() { }
+
+	FPhysPredictedProperty(const FName& inName, const T& inValue)
+		: Name(inName)
+		, Value(inValue)
+	{}
+
 	bool operator ==(const FPhysPredictedProperty& other) const
 	{
 		return Name == other.Name;
