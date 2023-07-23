@@ -84,6 +84,11 @@ void UGAT_ApplyPhysCustomMovement_NonDeterministicMove::InitAndApply()
 			movement->TimeToWait = InitialTimeToWait;
 			movement->OnCustomMovementEnd.AddDynamic(this, &ThisClass::OnPhysCustomMovementEnded);
 			movement->OnReachedTime.AddDynamic(this, &ThisClass::OnPhysCustomMovementReachedTime);
+			
+			// NOTE: bind predicted properties from the movement data members that carry information about the movement so the server can adjust accordingly 
+			movement->BindFloatProperty("TimeToWait");
+			movement->BindFloatProperty("MovementDirectionSign");
+			movement->BindFloatProperty("ElapsedTime");
 
 			PhysCustomMovement = movement;
 			bActivated = CharacterMovementComponent->StartPhysCustomMovement(PhysCustomMovement);

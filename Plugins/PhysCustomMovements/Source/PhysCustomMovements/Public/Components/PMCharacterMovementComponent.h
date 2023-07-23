@@ -14,8 +14,9 @@ DECLARE_LOG_CATEGORY_EXTERN(LogPhysCustomMovement, Log, All);
 class FPMSavedMove : public FSavedMove_Character
 {
 public:
-
 	typedef FSavedMove_Character Super;
+
+	FPMSavedMove() : Super() { }
 
 	///@brief Resets all saved variables.
 	virtual void Clear() override;
@@ -35,18 +36,16 @@ public:
 	// Any custom physics movement
 	uint8 bSavedWantsPhysCustomMovement : 1;
 
-	// TODO: dynamically handling unpredicted data... idea: add maps for binding basic types such as bool, int32, float, FVector, FRotator
-	float waitTime = 99.f;
-	float movementDirectionSign = 1.f;
-	float elapsedTime = 0.f;
+	FPhysCustomMovement Saved_PhysCustomMovement;
 };
 
 class FPMNetworkPredictionData_Client : public FNetworkPredictionData_Client_Character
 {
 public:
-	FPMNetworkPredictionData_Client(const UCharacterMovementComponent& ClientMovement);
+	//typedef FNetworkPredictionData_Client_Character Super;
+	using Super = FNetworkPredictionData_Client_Character; // I can't see the difference from the above
 
-	typedef FNetworkPredictionData_Client_Character Super;
+	FPMNetworkPredictionData_Client(const UCharacterMovementComponent& ClientMovement);
 
 	///@brief Allocates a new copy of our custom saved move
 	virtual FSavedMovePtr AllocateNewMove() override;
@@ -62,10 +61,7 @@ public:
 
 	virtual bool Serialize(UCharacterMovementComponent& CharacterMovement, FArchive& Ar, UPackageMap* PackageMap, ENetworkMoveType MoveType) override;
 
-	// TODO: replicate unpredicted data... should find a way of binding them to this container dynamically
-	float WaitTime = 0.f;
-	float MovementDirectionSign = 1.f;
-	float ElapsedTime = 0.f;
+	FPhysCustomMovement MoveData_PhysCustomMovement;
 };
 
 class FPMCharacterNetworkMoveDataContainer : public FCharacterNetworkMoveDataContainer
@@ -87,6 +83,7 @@ class PHYSCUSTOMMOVEMENTS_API UPMCharacterMovementComponent : public UCharacterM
 	GENERATED_BODY()
 	
 	friend class FPMSavedMove;
+	friend class FPMCharacterNetworkMoveData;
 
 protected:
 	TSharedPtr<FPhysCustomMovement> PhysCustomMovement;
@@ -123,7 +120,6 @@ protected:
 	// UCharacterMovementComponent API
 	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
 	virtual void MoveAutonomous(float ClientTimeStamp, float DeltaTime, uint8 CompressedFlags, const FVector& NewAccel);
-
 	/** Event notification when client receives correction data from the server, before applying the data. Base implementation logs relevant data and draws debug info if "p.NetShowCorrections" is not equal to 0. */
 	virtual void OnClientCorrectionReceived(class FNetworkPredictionData_Client_Character& ClientData, float TimeStamp, FVector NewLocation, FVector NewVelocity, UPrimitiveComponent* NewBase, FName NewBaseBoneName, bool bHasBase, bool bBaseRelativePosition, uint8 ServerMovementMode) override;
 	// ~UCharacterMovementComponent

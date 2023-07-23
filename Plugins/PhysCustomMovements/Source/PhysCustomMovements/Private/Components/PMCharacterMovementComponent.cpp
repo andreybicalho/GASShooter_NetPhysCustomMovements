@@ -13,6 +13,7 @@ DECLARE_CYCLE_STAT(TEXT("Char PhysCustom"), STAT_UPMCharacterMovementComponent_P
 UPMCharacterMovementComponent::UPMCharacterMovementComponent(const FObjectInitializer& ObjectInitializer) 
 	: UCharacterMovementComponent(ObjectInitializer)
 {
+	SetIsReplicatedByDefault(true);
 	SetNetworkMoveDataContainer(CustomCharacterNetworkMoveDataContainer);
 }
 
@@ -150,7 +151,8 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 
 				// Apply acceleration
 				const float friction = 0.f; // TODO: create a custom friction: PhysCustomMovement->GetFriction() (something like: GetPhysicsVolume()->FluidFriction * CustomMovementFrictionMultiplier)
-				CalcVelocity(deltaTime, friction, false, GetMaxBrakingDeceleration());
+				const bool bFluid = false; // TODO: PhysCustomMovement->IsFluid()
+				CalcVelocity(deltaTime, friction, bFluid, GetMaxBrakingDeceleration());
 
 				// override velocity with the custom movement logic
 				const FVector oldVelocity = Velocity;
@@ -161,6 +163,18 @@ void UPMCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations
 				const FVector oldLocation = UpdatedComponent->GetComponentLocation();
 				FHitResult hit(1.f);
 				SafeMoveUpdatedComponent(adjustedVelocity, UpdatedComponent->GetComponentQuat(), true, hit);
+				
+				if (hit.bStartPenetrating)
+				{
+					// Allow this hit to be used as an impact we can deflect off, otherwise we do nothing the rest of the update and appear to hitch.
+					HandleImpact(hit);
+					SlideAlongSurface(adjustedVelocity, 1.f, hit.Normal, hit, true);
+
+					if (hit.bStartPenetrating)
+					{
+						OnCharacterStuckInGeometry(&hit);
+					}
+				}
 
 				// update velocity with what we really moved
 				Velocity = (UpdatedComponent->GetComponentLocation() - oldLocation) / deltaTime; // v = dx / dt
@@ -265,8 +279,7 @@ uint8 UPMCharacterMovementComponent::GetPhysCustomMovementModeFlag() const
 
 void UPMCharacterMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
 {
-	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
-
+	// first check previous
 	// NOTE: only Autonomous Proxy and Authority should stop the phys custom movement since only them has an instance of that
 	if (GetOwner()->GetLocalRole() >= ROLE_AutonomousProxy)
 	{
@@ -285,34 +298,29 @@ void UPMCharacterMovementComponent::OnMovementModeChanged(EMovementMode Previous
 			StopPhysCustomMovement();
 		}
 	}
+
+	// lastly check the new movement mode
+	//if (MovementMode == MOVE_Custom && CustomMovementMode == GetPhysCustomMovementModeFlag())
+	//{
+	//	// NOTE: this is the case in which we are not using the API to enter the custom movement and want just to set movement mode to enter the movement.
+	//	// this actually only makes sense if we use a lot of flags for the 'CustomMovementMode', since we use just one single flag to have different custom movements
+	//	// we don't have a way of switching which movement we are running, because we can't predict it before hand, they are set from the ability task
+	//}
+
+	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
 }
 
 void UPMCharacterMovementComponent::MoveAutonomous(float ClientTimeStamp, float DeltaTime, uint8 CompressedFlags,
 	const FVector& NewAccel)
 {
-	// Apply unpredicted data to the current custom movement to keep server and client simulating with the same values.
-	// TODO: how to dynamically set those??
-	if (CustomMovementMode == GetPhysCustomMovementModeFlag() && PhysCustomMovement.IsValid() && PhysCustomMovement->IsActive())
+	if (const FPMCharacterNetworkMoveData* moveData = static_cast<FPMCharacterNetworkMoveData*>(GetCurrentNetworkMoveData()))
 	{
-		if (PhysCustomMovement->GetTypeStruct() == FPhysCustomMovement_NonDeterministicMove::StaticStruct())
+		if (CustomMovementMode == GetPhysCustomMovementModeFlag() && PhysCustomMovement.IsValid() 
+			&& PhysCustomMovement->IsActive() && moveData->MoveData_PhysCustomMovement.IsActive()
+			&& *PhysCustomMovement == moveData->MoveData_PhysCustomMovement)
 		{
-			if (FPhysCustomMovement_NonDeterministicMove* movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(PhysCustomMovement.Get()))
-			{
-				//Unpacks the Network Move Data for the CMC to use on the server or during replay. Copies Network Move Data into CMC.
-				if (const FPMCharacterNetworkMoveData* moveData = static_cast<FPMCharacterNetworkMoveData*>(GetCurrentNetworkMoveData()))
-				{
-					/*UE_LOG(LogPhysCustomMovement, Warning, TEXT("%s: %s: (WaitTime = %.2f, ElapsedTime = %.2f, MovementDirectionSign = %.2f)"),
-						ANSI_TO_TCHAR(__FUNCTION__),
-						GET_ACTOR_LOCAL_ROLE_FSTRING(GetCharacterOwner()),
-						moveData->WaitTime,
-						moveData->ElapsedTime,
-						moveData->MovementDirectionSign);*/
-
-					movement->TimeToWait = moveData->WaitTime;
-					movement->MovementDirectionSign = moveData->MovementDirectionSign;
-					movement->ElapsedTime = moveData->ElapsedTime;
-				}
-			}
+			//PhysCustomMovement->SetupBaseFromCustomMovement(moveData->MoveData_PhysCustomMovement); // TODO: should do this?
+			PhysCustomMovement->ReflectFromOtherPredPropsByMyKeys(moveData->MoveData_PhysCustomMovement);
 		}
 	}
 
@@ -366,10 +374,7 @@ void FPMSavedMove::Clear()
 
 	bSavedWantsPhysCustomMovement = false;
 
-	// TODO: should clear non predicted data here?
-	waitTime = 99.f;
-	movementDirectionSign = 1.f;
-	elapsedTime = 0.f;
+	Saved_PhysCustomMovement.Clear();
 }
 
 uint8 FPMSavedMove::GetCompressedFlags() const
@@ -388,21 +393,69 @@ bool FPMSavedMove::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* Char
 {
 	//Set which moves can be combined together. This will depend on the bit flags that are used.
 
-	if (bSavedWantsPhysCustomMovement != ((FPMSavedMove*)NewMove.Get())->bSavedWantsPhysCustomMovement)
+	const FPMSavedMove* newPMMove = static_cast<FPMSavedMove*>(NewMove.Get());
+
+	if (bSavedWantsPhysCustomMovement != newPMMove->bSavedWantsPhysCustomMovement)
 	{
 		return false;
 	}
 
-	// TODO: should check for non predicted data? how to do it if they were dynamically added?
-	if (UPMCharacterMovementComponent* characterMovement = Cast<UPMCharacterMovementComponent>(Character->GetCharacterMovement()))
+	// NOTE: ideally we would check each property using FMath::IsNearlyEqual or equivalent, 
+	// but it would be too expensive looping through all the arrays and check the difference between each predicted property if we had too much of them, 
+	// so for now we just check the array like so:
+	if (Saved_PhysCustomMovement.PhysBytes != newPMMove->Saved_PhysCustomMovement.PhysBytes)
 	{
-		if (auto movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(characterMovement->PhysCustomMovement.Get()))
-		{
-			// TODO: how to dynamically check these? 
-			return FMath::IsNearlyEqual(movement->TimeToWait, ((FPMSavedMove*)NewMove.Get())->waitTime, KINDA_SMALL_NUMBER)
-				&& FMath::IsNearlyEqual(movement->MovementDirectionSign, ((FPMSavedMove*)NewMove.Get())->movementDirectionSign, KINDA_SMALL_NUMBER)
-				&& FMath::IsNearlyEqual(movement->ElapsedTime, ((FPMSavedMove*)NewMove.Get())->elapsedTime, KINDA_SMALL_NUMBER);
-		}
+		return false;
+	}
+
+	if (Saved_PhysCustomMovement.PhysBooleans != newPMMove->Saved_PhysCustomMovement.PhysBooleans)
+	{
+		return false;
+	}
+
+	if (Saved_PhysCustomMovement.PhysIntegers != newPMMove->Saved_PhysCustomMovement.PhysIntegers)
+	{
+		return false;
+	}
+
+	if (Saved_PhysCustomMovement.PhysFloats != newPMMove->Saved_PhysCustomMovement.PhysFloats)
+	{
+		return false;
+	}
+
+	if (Saved_PhysCustomMovement.PhysDoubles != newPMMove->Saved_PhysCustomMovement.PhysDoubles)
+	{
+		return false;
+	}
+
+	if (Saved_PhysCustomMovement.PhysVectors != newPMMove->Saved_PhysCustomMovement.PhysVectors)
+	{
+		return false;
+	}
+
+	if (Saved_PhysCustomMovement.PhysVectors2D != newPMMove->Saved_PhysCustomMovement.PhysVectors2D)
+	{
+		return false;
+	}
+
+	if (Saved_PhysCustomMovement.PhysVectors4 != newPMMove->Saved_PhysCustomMovement.PhysVectors4)
+	{
+		return false;
+	}
+
+	if (Saved_PhysCustomMovement.PhysRotators != newPMMove->Saved_PhysCustomMovement.PhysRotators)
+	{
+		return false;
+	}
+
+	if (Saved_PhysCustomMovement.PhysQuats != newPMMove->Saved_PhysCustomMovement.PhysQuats)
+	{
+		return false;
+	}
+
+	if (Saved_PhysCustomMovement.PhysGameplayTags != newPMMove->Saved_PhysCustomMovement.PhysGameplayTags)
+	{
+		return false;
 	}
 
 	return Super::CanCombineWith(NewMove, Character, MaxDelta);
@@ -417,13 +470,10 @@ void FPMSavedMove::SetMoveFor(ACharacter* Character, float InDeltaTime, FVector 
 		// Copy values into the saved move
 		bSavedWantsPhysCustomMovement = characterMovement->bWantsPhysCustomMovement;
 
-		// TODO: should set non deterministic data here as well? how to do it if they were dynamically added
-		if (auto movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(characterMovement->PhysCustomMovement.Get()))
+		if (characterMovement->PhysCustomMovement.IsValid())
 		{
-			// TODO: how to dynamically set these??
-			waitTime = movement->TimeToWait;
-			movementDirectionSign = movement->MovementDirectionSign;
-			elapsedTime = movement->ElapsedTime;
+			Saved_PhysCustomMovement.SetupBaseFromCustomMovement(*characterMovement->PhysCustomMovement);
+			characterMovement->PhysCustomMovement->SetupPredictedProperties(Saved_PhysCustomMovement); // NOTE: this will update internal based on the predicted properties arrays and output with the new values as well
 		}
 	}
 }
@@ -440,13 +490,11 @@ void FPMSavedMove::PrepMoveFor(ACharacter* Character)
 		// Copy values out of the saved move
 		characterMovement->bWantsPhysCustomMovement = bSavedWantsPhysCustomMovement;
 
-		// TODO: should apply non predicted values here? how to do it if they were dynamically added
-		if (auto movement = static_cast<FPhysCustomMovement_NonDeterministicMove*>(characterMovement->PhysCustomMovement.Get()))
+		if (characterMovement->PhysCustomMovement.IsValid())
 		{
-			// TODO: how to dynamically set these??
-			movement->TimeToWait = waitTime;
-			movement->MovementDirectionSign = movementDirectionSign;
-			movement->ElapsedTime = elapsedTime;
+			// NOTE: we should only copy important data since we might be running a movement already and the pointer must point to the same object as in the ability task since there are delegates and maybe other stuff important that can't be overridden.
+			characterMovement->PhysCustomMovement->SetupBaseFromCustomMovement(Saved_PhysCustomMovement);
+			characterMovement->PhysCustomMovement->ReflectFromOtherPredictedProperties(Saved_PhysCustomMovement);
 		}
 	}
 }
@@ -473,10 +521,11 @@ bool FPMCharacterNetworkMoveData::Serialize(UCharacterMovementComponent& Charact
 {
 	Super::Serialize(CharacterMovement, Ar, PackageMap, MoveType);
 
-	// TODO: how to dynamically serialize these??
-	SerializeOptionalValue<float>(Ar.IsSaving(), Ar, WaitTime, 0.f);
-	SerializeOptionalValue<float>(Ar.IsSaving(), Ar, MovementDirectionSign, 1.f);
-	SerializeOptionalValue<float>(Ar.IsSaving(), Ar, ElapsedTime, 0.f);
+	if (MoveData_PhysCustomMovement.IsActive())
+	{
+		//SerializeOptionalValue<FPhysCustomMovement>(Ar.IsSaving(), Ar, MoveData_PhysCustomMovement, FPhysCustomMovement()); // (using operator<< on Archive)
+		NetSerializeOptionalValue<FPhysCustomMovement>(Ar.IsSaving(), Ar, MoveData_PhysCustomMovement, FPhysCustomMovement(), PackageMap); // (using the NetSerialize function)
+	}
 
 	return !Ar.IsError();
 }
@@ -487,8 +536,11 @@ void FPMCharacterNetworkMoveData::ClientFillNetworkMoveData(const FSavedMove_Cha
 
 	const FPMSavedMove& savedMove = static_cast<const FPMSavedMove&>(ClientMove);
 
-	// TODO: how to dynamically set these??
-	WaitTime = savedMove.waitTime;
-	MovementDirectionSign = savedMove.movementDirectionSign;
-	ElapsedTime = savedMove.elapsedTime;
+	// TODO: should fill it anyways or only if active?
+	MoveData_PhysCustomMovement = savedMove.Saved_PhysCustomMovement;
+
+	/*if (savedMove.Saved_PhysCustomMovement.IsActive())
+	{
+		MoveData_PhysCustomMovement = savedMove.Saved_PhysCustomMovement;
+	}*/
 }

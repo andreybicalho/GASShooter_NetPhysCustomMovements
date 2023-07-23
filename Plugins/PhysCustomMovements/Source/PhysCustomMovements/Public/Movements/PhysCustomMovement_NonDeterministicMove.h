@@ -20,19 +20,40 @@ struct PHYSCUSTOMMOVEMENTS_API FPhysCustomMovement_NonDeterministicMove : public
 {
 	GENERATED_USTRUCT_BODY()
 
-	float TimeToWait = -1.f;
+	UPROPERTY() // predicted variables requires uproperty otherwise reflection system can't pick it up
+	float TimeToWait;
 
-	float MovementDirectionSign = 1.f;
+	UPROPERTY()
+	float MovementDirectionSign;
 
-	float ElapsedTime = 0.f;
+	UPROPERTY()
+	float ElapsedTime;
 
 	FPhysCustomMovementDelegate OnReachedTime;
 
 	FPhysCustomMovement_NonDeterministicMove();
 
-	virtual ~FPhysCustomMovement_NonDeterministicMove() {};
+	virtual ~FPhysCustomMovement_NonDeterministicMove() { }
 
 	virtual void UpdateMovement(const float deltaTime, const FVector& oldVelocity, FVector& outVelocity) override;
 
-	virtual UScriptStruct* GetTypeStruct() const;
+	virtual UScriptStruct* GetScriptStruct() const;
+
+	virtual FPhysCustomMovement* Clone() const;
+
+	virtual void Clear() override;
+
+	/*virtual void SetupBaseFromCustomMovement(const FPhysCustomMovement& physCustomMovement) override;*/
+
+	/*virtual bool NetSerialize(FArchive& ar, UPackageMap* map, bool& bOutSuccess) override;*/
 };
+
+//template<>
+//struct TStructOpsTypeTraits<FPhysCustomMovement_NonDeterministicMove> : public TStructOpsTypeTraitsBase2<FPhysCustomMovement_NonDeterministicMove>
+//{
+//	enum
+//	{
+//		WithNetSerializer = true,
+//		WithCopy = true
+//	};
+//};

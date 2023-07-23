@@ -14,7 +14,6 @@ struct PHYSCUSTOMMOVEMENTS_API FPhysCustomMovement_ConstantForce : public FPhysC
 {
 	GENERATED_USTRUCT_BODY()
 
-	UPROPERTY()
 	FVector Force = FVector::ZeroVector;
 
 	FPhysCustomMovement_ConstantForce();
@@ -22,4 +21,17 @@ struct PHYSCUSTOMMOVEMENTS_API FPhysCustomMovement_ConstantForce : public FPhysC
 	virtual ~FPhysCustomMovement_ConstantForce() {}
 
 	virtual void UpdateMovement(const float deltaTime, const FVector& oldVelocity, FVector& outVelocity) override;
+
+	/*virtual bool NetSerialize(FArchive& ar, UPackageMap* map, bool& bOutSuccess) override;
+	virtual UScriptStruct* GetScriptStruct() const override;*/
 };
+
+//template<>
+//struct TStructOpsTypeTraits<FPhysCustomMovement_ConstantForce> : public TStructOpsTypeTraitsBase2<FPhysCustomMovement_ConstantForce>
+//{
+//	enum
+//	{
+//		WithNetSerializer = true,
+//		WithCopy = true
+//	};
+//};

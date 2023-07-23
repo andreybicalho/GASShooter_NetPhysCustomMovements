@@ -14,13 +14,10 @@ struct PHYSCUSTOMMOVEMENTS_API FPhysCustomMovement_Launch : public FPhysCustomMo
 {
 	GENERATED_USTRUCT_BODY()
 
-	UPROPERTY()
 	FVector LaunchVelocity = FVector::ZeroVector;
 
-	UPROPERTY()
 	bool bXYOverride = false;
 
-	UPROPERTY()
 	bool bZOverride = false;
 
 	FPhysCustomMovement_Launch();

@@ -19,3 +19,13 @@ void FPhysCustomMovement_ConstantForce::UpdateMovement(const float deltaTime, co
     outVelocity += velocity;
     outVelocity = outVelocity.GetClampedToMaxSize(GetMaxSpeed());
 }
+
+//bool FPhysCustomMovement_ConstantForce::NetSerialize(FArchive& ar, UPackageMap* map, bool& bOutSuccess)
+//{
+//    return FPhysCustomMovement::NetSerialize(ar, map, bOutSuccess);
+//}
+//
+//UScriptStruct* FPhysCustomMovement_ConstantForce::GetScriptStruct() const
+//{
+//    return FPhysCustomMovement_ConstantForce::StaticStruct();
+//}
