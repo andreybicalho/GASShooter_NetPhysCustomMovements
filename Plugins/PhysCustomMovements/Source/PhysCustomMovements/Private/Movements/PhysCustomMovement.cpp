@@ -29,18 +29,30 @@ void FPhysCustomMovement::EndMovement()
 	OnCustomMovementEnd.Broadcast();
 }
 
-FPhysCustomMovement* FPhysCustomMovement::Clone() const
+void FPhysCustomMovement::SetupBaseFromCustomMovement(const FPhysCustomMovement& physCustomMovement)
 {
-	// If child classes don't override this, savedmoves will not work
-	checkf(false, TEXT("FPhysCustomMovement::Clone() being called erroneously. This should always be overridden in child classes!"));
+	// NOTE: we should setup all properties that are serialized
+	CharacterMovementComponent = physCustomMovement.CharacterMovementComponent;
+	OnCustomMovementEnd = physCustomMovement.OnCustomMovementEnd;
 
-	/*
-	* boilerplate code example:
-	* FPhysCustomMovement_JetPack* copyPtr = new FPhysCustomMovement_JetPack(*this);
-	* return copyPtr;
-	*/
+	MovementName = physCustomMovement.MovementName;
+	CurrentVelocity = physCustomMovement.CurrentVelocity;
+	CurrentTime = physCustomMovement.CurrentTime;
+	bIsActive = physCustomMovement.bIsActive;
+	MaxSpeed = physCustomMovement.MaxSpeed;
+	MaxAcceleration = physCustomMovement.MaxAcceleration;
+	MaxBrakingDeceleration = physCustomMovement.MaxBrakingDeceleration;
+	CustomModeFlag = physCustomMovement.CustomModeFlag;
+	FallbackMovementMode = physCustomMovement.FallbackMovementMode;
+	bSkipMovementUpdates = physCustomMovement.bSkipMovementUpdates;
+}
 
-	return nullptr;
+void FPhysCustomMovement::Clear()
+{
+	bIsActive = false;
+	CharacterMovementComponent = nullptr;
+
+	ClearPredictedProperties();
 }
 
 bool FPhysCustomMovement::SkipThisUpdate(const float deltaTime)
@@ -69,20 +81,6 @@ void FPhysCustomMovement::ResetUpdateSkipping()
 	TimeSkippingMovement = 0.f;
 	UpdateSkipCount = 0;
 	bSkipMovementUpdates = false;
-}
-
-void FPhysCustomMovement::Clear()
-{
-	bIsActive = false;
-	CharacterMovementComponent = nullptr;
-
-	ResetUpdateSkipping();
-	ClearPredictedProperties();
-}
-
-UScriptStruct* FPhysCustomMovement::GetScriptStruct() const
-{
-	return FPhysCustomMovement::StaticStruct();
 }
 
 void FPhysCustomMovement::BindByteProperty(const FName name)
@@ -160,151 +158,6 @@ void FPhysCustomMovement::BindGameplayTagProperty(const FName name)
 	FPhysPredictedProperty<FGameplayTag> physProperty;
 	physProperty.Name = name;
 	PhysGameplayTags.Add(physProperty);
-}
-
-bool FPhysCustomMovement::HasBoundPredictedProperties() const
-{
-	return !PhysBytes.IsEmpty()
-		|| !PhysBooleans.IsEmpty()
-		|| !PhysIntegers.IsEmpty()
-		|| !PhysFloats.IsEmpty()
-		|| !PhysDoubles.IsEmpty()
-		|| !PhysVectors.IsEmpty()
-		|| !PhysVectors2D.IsEmpty()
-		|| !PhysVectors4.IsEmpty()
-		|| !PhysRotators.IsEmpty()
-		|| !PhysQuats.IsEmpty()
-		|| !PhysGameplayTags.IsEmpty();
-}
-
-void FPhysCustomMovement::ClearPredictedProperties()
-{
-	if (HasBoundPredictedProperties())
-	{
-		for (const FPhysPredictedProperty<uint8>& byteProp : PhysBytes)
-		{
-			if (FByteProperty* bytePropertyPtr = CastField<FByteProperty>(GetScriptStruct()->FindPropertyByName(byteProp.Name)))
-			{
-				void* valuePtr = bytePropertyPtr->ContainerPtrToValuePtr<void>(this);
-				bytePropertyPtr->SetPropertyValue(valuePtr, 0);
-			}
-		}
-
-		for (const FPhysPredictedProperty<bool>& boolProp : PhysBooleans)
-		{
-			if (FBoolProperty* boolPropertyPtr = CastField<FBoolProperty>(GetScriptStruct()->FindPropertyByName(boolProp.Name)))
-			{
-				void* valuePtr = boolPropertyPtr->ContainerPtrToValuePtr<void>(this);
-				boolPropertyPtr->SetPropertyValue(valuePtr, false);
-			}
-		}
-
-		for (const FPhysPredictedProperty<int32>& integerProp : PhysIntegers)
-		{
-			if (FIntProperty* integerPropPtr = CastField<FIntProperty>(GetScriptStruct()->FindPropertyByName(integerProp.Name)))
-			{
-				void* valuePtr = integerPropPtr->ContainerPtrToValuePtr<void>(this);
-				integerPropPtr->SetPropertyValue(valuePtr, 0);
-			}
-		}
-
-		for (const FPhysPredictedProperty<float>& floatProp : PhysFloats)
-		{
-			if (FFloatProperty* floatPropPtr = CastField<FFloatProperty>(GetScriptStruct()->FindPropertyByName(floatProp.Name)))
-			{
-				void* valuePtr = floatPropPtr->ContainerPtrToValuePtr<void>(this);
-				floatPropPtr->SetPropertyValue(valuePtr, 0.f);
-			}
-		}
-
-		for (const FPhysPredictedProperty<double>& doubleProp : PhysDoubles)
-		{
-			if (FDoubleProperty* doublePropPtr = CastField<FDoubleProperty>(GetScriptStruct()->FindPropertyByName(doubleProp.Name)))
-			{
-				void* valuePtr = doublePropPtr->ContainerPtrToValuePtr<void>(this);
-				doublePropPtr->SetPropertyValue(valuePtr, 0.f);
-			}
-		}
-
-		for (const FPhysPredictedProperty<FVector>& vectorProp : PhysVectors)
-		{
-			if (FStructProperty* vectorPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(vectorProp.Name)))
-			{
-				vectorPropPtr->SetValue_InContainer(this, &FVector::ZeroVector);
-			}
-		}
-
-		for (const FPhysPredictedProperty<FVector2D>& vector2DProp : PhysVectors2D)
-		{
-			if (FStructProperty* vector2DPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(vector2DProp.Name)))
-			{
-				vector2DPropPtr->SetValue_InContainer(this, &FVector2D::ZeroVector);
-			}
-		}
-
-		for (const FPhysPredictedProperty<FVector4>& vector4Prop : PhysVectors4)
-		{
-			if (FStructProperty* vector4PropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(vector4Prop.Name)))
-			{
-				FVector4 zeroVector4 = FVector4(0);
-				vector4PropPtr->SetValue_InContainer(this, &zeroVector4);
-			}
-		}
-
-		for (const FPhysPredictedProperty<FRotator>& rotatorProp : PhysRotators)
-		{
-			if (FStructProperty* rotatorPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(rotatorProp.Name)))
-			{
-				rotatorPropPtr->SetValue_InContainer(this, &FRotator::ZeroRotator);
-			}
-		}
-
-		for (const FPhysPredictedProperty<FQuat>& quatProp : PhysQuats)
-		{
-			if (FStructProperty* quatPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(quatProp.Name)))
-			{
-				quatPropPtr->SetValue_InContainer(this, &FQuat::Identity);
-			}
-		}
-
-		for (const FPhysPredictedProperty<FGameplayTag>& gameplayTagProp : PhysGameplayTags)
-		{
-			if (FStructProperty* gameplayTagPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(gameplayTagProp.Name)))
-			{
-				gameplayTagPropPtr->SetValue_InContainer(this, &FGameplayTag::EmptyTag);
-			}
-		}
-	}
-
-	PhysBytes.Empty();
-	PhysBooleans.Empty();
-	PhysIntegers.Empty();
-	PhysFloats.Empty();
-	PhysDoubles.Empty();
-	PhysVectors.Empty();
-	PhysVectors2D.Empty();
-	PhysVectors4.Empty();
-	PhysRotators.Empty();
-	PhysQuats.Empty();
-	PhysGameplayTags.Empty();
-}
-
-void FPhysCustomMovement::SetupBaseFromCustomMovement(const FPhysCustomMovement& physCustomMovement)
-{
-	// NOTE: we should setup all properties that are serialized
-	CharacterMovementComponent = physCustomMovement.CharacterMovementComponent;
-	OnCustomMovementEnd = physCustomMovement.OnCustomMovementEnd;
-
-	MovementName = physCustomMovement.MovementName;
-	CurrentVelocity = physCustomMovement.CurrentVelocity;
-	CurrentTime = physCustomMovement.CurrentTime;
-	bIsActive = physCustomMovement.bIsActive;
-	MaxSpeed = physCustomMovement.MaxSpeed;
-	MaxAcceleration = physCustomMovement.MaxAcceleration;
-	MaxBrakingDeceleration = physCustomMovement.MaxBrakingDeceleration;
-	CustomModeFlag = physCustomMovement.CustomModeFlag;
-	FallbackMovementMode = physCustomMovement.FallbackMovementMode;
-	bSkipMovementUpdates = physCustomMovement.bSkipMovementUpdates;
 }
 
 // used in the SavedMove::SetMoveFor
@@ -620,83 +473,222 @@ void FPhysCustomMovement::ReflectFromOtherPredictedProperties(const FPhysCustomM
 	}
 }
 
-bool FPhysCustomMovement::NetSerialize(FArchive& ar, UPackageMap* map, bool& bOutSuccess)
+bool FPhysCustomMovement::HasBoundPredictedProperties() const
 {
-	// TODO: or either increase p.NetPackedMovementMaxBits or remove some of the variables because we're replicating way too much stuff
+	return !PhysBytes.IsEmpty()
+		|| !PhysBooleans.IsEmpty()
+		|| !PhysIntegers.IsEmpty()
+		|| !PhysFloats.IsEmpty()
+		|| !PhysDoubles.IsEmpty()
+		|| !PhysVectors.IsEmpty()
+		|| !PhysVectors2D.IsEmpty()
+		|| !PhysVectors4.IsEmpty()
+		|| !PhysRotators.IsEmpty()
+		|| !PhysQuats.IsEmpty()
+		|| !PhysGameplayTags.IsEmpty();
+}
 
-	ar << CharacterMovementComponent;
-	//ar << OnCustomMovementEnd; // TODO: should serialize delegates?
-	ar << MovementName;
-	ar << bIsActive;
-
-	// TODO: should we only serialize the rest of the data if we have an active movement?
-	if (bIsActive)
+void FPhysCustomMovement::ClearPredictedProperties()
+{
+	if (HasBoundPredictedProperties())
 	{
-		ar << CurrentVelocity;
-		ar << CurrentTime;
-		ar << MaxSpeed;
-		ar << MaxAcceleration;
-		ar << MaxBrakingDeceleration;
-		ar << CustomModeFlag;
-
-		uint8 FallbackMovementModeSerialize = static_cast<uint8>(FallbackMovementMode);
-		ar << FallbackMovementModeSerialize;
-		FallbackMovementMode = static_cast<EMovementMode>(FallbackMovementModeSerialize);
-
-		// predicted properties
-		if (HasBoundPredictedProperties())
+		for (const FPhysPredictedProperty<uint8>& byteProp : PhysBytes)
 		{
-			ar << PhysBytes;
-			ar << PhysBooleans;
-			ar << PhysIntegers;
-			ar << PhysFloats;
-			ar << PhysDoubles;
-			ar << PhysVectors;
-			ar << PhysVectors2D;
-			ar << PhysVectors4;
-			ar << PhysRotators;
-			ar << PhysQuats;
-			ar << PhysGameplayTags;
+			if (FByteProperty* bytePropertyPtr = CastField<FByteProperty>(GetScriptStruct()->FindPropertyByName(byteProp.Name)))
+			{
+				void* valuePtr = bytePropertyPtr->ContainerPtrToValuePtr<void>(this);
+				bytePropertyPtr->SetPropertyValue(valuePtr, 0);
+			}
+		}
+
+		for (const FPhysPredictedProperty<bool>& boolProp : PhysBooleans)
+		{
+			if (FBoolProperty* boolPropertyPtr = CastField<FBoolProperty>(GetScriptStruct()->FindPropertyByName(boolProp.Name)))
+			{
+				void* valuePtr = boolPropertyPtr->ContainerPtrToValuePtr<void>(this);
+				boolPropertyPtr->SetPropertyValue(valuePtr, false);
+			}
+		}
+
+		for (const FPhysPredictedProperty<int32>& integerProp : PhysIntegers)
+		{
+			if (FIntProperty* integerPropPtr = CastField<FIntProperty>(GetScriptStruct()->FindPropertyByName(integerProp.Name)))
+			{
+				void* valuePtr = integerPropPtr->ContainerPtrToValuePtr<void>(this);
+				integerPropPtr->SetPropertyValue(valuePtr, 0);
+			}
+		}
+
+		for (const FPhysPredictedProperty<float>& floatProp : PhysFloats)
+		{
+			if (FFloatProperty* floatPropPtr = CastField<FFloatProperty>(GetScriptStruct()->FindPropertyByName(floatProp.Name)))
+			{
+				void* valuePtr = floatPropPtr->ContainerPtrToValuePtr<void>(this);
+				floatPropPtr->SetPropertyValue(valuePtr, 0.f);
+			}
+		}
+
+		for (const FPhysPredictedProperty<double>& doubleProp : PhysDoubles)
+		{
+			if (FDoubleProperty* doublePropPtr = CastField<FDoubleProperty>(GetScriptStruct()->FindPropertyByName(doubleProp.Name)))
+			{
+				void* valuePtr = doublePropPtr->ContainerPtrToValuePtr<void>(this);
+				doublePropPtr->SetPropertyValue(valuePtr, 0.f);
+			}
+		}
+
+		for (const FPhysPredictedProperty<FVector>& vectorProp : PhysVectors)
+		{
+			if (FStructProperty* vectorPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(vectorProp.Name)))
+			{
+				vectorPropPtr->SetValue_InContainer(this, &FVector::ZeroVector);
+			}
+		}
+
+		for (const FPhysPredictedProperty<FVector2D>& vector2DProp : PhysVectors2D)
+		{
+			if (FStructProperty* vector2DPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(vector2DProp.Name)))
+			{
+				vector2DPropPtr->SetValue_InContainer(this, &FVector2D::ZeroVector);
+			}
+		}
+
+		for (const FPhysPredictedProperty<FVector4>& vector4Prop : PhysVectors4)
+		{
+			if (FStructProperty* vector4PropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(vector4Prop.Name)))
+			{
+				FVector4 zeroVector4 = FVector4(0);
+				vector4PropPtr->SetValue_InContainer(this, &zeroVector4);
+			}
+		}
+
+		for (const FPhysPredictedProperty<FRotator>& rotatorProp : PhysRotators)
+		{
+			if (FStructProperty* rotatorPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(rotatorProp.Name)))
+			{
+				rotatorPropPtr->SetValue_InContainer(this, &FRotator::ZeroRotator);
+			}
+		}
+
+		for (const FPhysPredictedProperty<FQuat>& quatProp : PhysQuats)
+		{
+			if (FStructProperty* quatPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(quatProp.Name)))
+			{
+				quatPropPtr->SetValue_InContainer(this, &FQuat::Identity);
+			}
+		}
+
+		for (const FPhysPredictedProperty<FGameplayTag>& gameplayTagProp : PhysGameplayTags)
+		{
+			if (FStructProperty* gameplayTagPropPtr = CastField<FStructProperty>(GetScriptStruct()->FindPropertyByName(gameplayTagProp.Name)))
+			{
+				gameplayTagPropPtr->SetValue_InContainer(this, &FGameplayTag::EmptyTag);
+			}
 		}
 	}
 
-	bOutSuccess = true;
+	PhysBytes.Empty();
+	PhysBooleans.Empty();
+	PhysIntegers.Empty();
+	PhysFloats.Empty();
+	PhysDoubles.Empty();
+	PhysVectors.Empty();
+	PhysVectors2D.Empty();
+	PhysVectors4.Empty();
+	PhysRotators.Empty();
+	PhysQuats.Empty();
+	PhysGameplayTags.Empty();
+}
+
+FPhysCustomMovement* FPhysCustomMovement::Clone() const
+{
+	// If child classes don't override this, savedmoves will not work
+	checkf(false, TEXT("FPhysCustomMovement::Clone() being called erroneously. This should always be overridden in child classes!"));
+
+	/*
+	* boilerplate code example:
+	* FPhysCustomMovement_JetPack* copyPtr = new FPhysCustomMovement_JetPack(*this);
+	* return copyPtr;
+	*/
+
+	return nullptr;
+}
+
+bool FPhysCustomMovement::NetSerialize(FArchive& archive, UPackageMap* map, bool& bOutSuccess)
+{
+	// TODO: or either increase p.NetPackedMovementMaxBits or remove some of the variables because we're replicating way too much stuff
+
+	archive << CharacterMovementComponent;
+	//archive << OnCustomMovementEnd; // TODO: should serialize delegates?
+	archive << MovementName;
+	archive << bIsActive;
+
+	archive << CurrentVelocity;
+	archive << CurrentTime;
+	archive << MaxSpeed;
+	archive << MaxAcceleration;
+	archive << MaxBrakingDeceleration;
+	archive << CustomModeFlag;
+
+	uint8 FallbackMovementModeSerialize = static_cast<uint8>(FallbackMovementMode);
+	archive << FallbackMovementModeSerialize;
+	FallbackMovementMode = static_cast<EMovementMode>(FallbackMovementModeSerialize);
+
+	// predicted properties
+	archive << PhysBytes;
+	archive << PhysBooleans;
+	archive << PhysIntegers;
+	archive << PhysFloats;
+	archive << PhysDoubles;
+	archive << PhysVectors;
+	archive << PhysVectors2D;
+	archive << PhysVectors4;
+	archive << PhysRotators;
+	archive << PhysQuats;
+	// archive << PhysGameplayTags; // TODO: gameplay tags serializes to FName, we have to handle that in the serialization of the predicted property
+
+	bOutSuccess = !archive.IsError();
 	return true;
 }
 
-FArchive& operator<<(FArchive& ar, FPhysCustomMovement& physCustomMovement)
+UScriptStruct* FPhysCustomMovement::GetScriptStruct() const
 {
-	const bool bIsSaving = ar.IsSaving();
+	return FPhysCustomMovement::StaticStruct();
+}
 
-	//SerializeOptionalValue<UCharacterMovementComponent*>(bIsSaving, ar, physCustomMovement.CharacterMovementComponent.Get(), nullptr);
-	//ar << physCustomMovement.CharacterMovementComponent.Get();
-	ar << physCustomMovement.MovementName;
-	ar << physCustomMovement.CurrentVelocity;
-	ar << physCustomMovement.CurrentTime;
-	ar << physCustomMovement.bIsActive;
-	ar << physCustomMovement.MaxSpeed;
-	ar << physCustomMovement.MaxAcceleration;
-	ar << physCustomMovement.MaxBrakingDeceleration;
-	SerializeOptionalValue<uint8>(bIsSaving, ar, physCustomMovement.CustomModeFlag, 0);
+FArchive& operator<<(FArchive& archive, FPhysCustomMovement& physCustomMovement)
+{
+	const bool bIsSaving = archive.IsSaving();
+
+	//SerializeOptionalValue<UCharacterMovementComponent*>(bIsSaving, archive, physCustomMovement.CharacterMovementComponent.Get(), nullptr);
+	//archive << physCustomMovement.CharacterMovementComponent.Get();
+	archive << physCustomMovement.MovementName;
+	archive << physCustomMovement.CurrentVelocity;
+	archive << physCustomMovement.CurrentTime;
+	archive << physCustomMovement.bIsActive;
+	archive << physCustomMovement.MaxSpeed;
+	archive << physCustomMovement.MaxAcceleration;
+	archive << physCustomMovement.MaxBrakingDeceleration;
+	SerializeOptionalValue<uint8>(bIsSaving, archive, physCustomMovement.CustomModeFlag, 0);
 
 	uint8 FallbackMovementModeSerialize = static_cast<uint8>(physCustomMovement.FallbackMovementMode);
-	ar << FallbackMovementModeSerialize;
+	archive << FallbackMovementModeSerialize;
 	physCustomMovement.FallbackMovementMode = static_cast<EMovementMode>(FallbackMovementModeSerialize);
 
-	ar << physCustomMovement.bSkipMovementUpdates;
+	archive << physCustomMovement.bSkipMovementUpdates;
 
 	// predicted properties
-	ar << physCustomMovement.PhysBytes;
-	ar << physCustomMovement.PhysBooleans;
-	ar << physCustomMovement.PhysIntegers;
-	ar << physCustomMovement.PhysFloats;
-	ar << physCustomMovement.PhysDoubles;
-	ar << physCustomMovement.PhysVectors;
-	ar << physCustomMovement.PhysVectors2D;
-	ar << physCustomMovement.PhysVectors4;
-	ar << physCustomMovement.PhysRotators;
-	ar << physCustomMovement.PhysQuats;
-	ar << physCustomMovement.PhysGameplayTags;
+	archive << physCustomMovement.PhysBytes;
+	archive << physCustomMovement.PhysBooleans;
+	archive << physCustomMovement.PhysIntegers;
+	archive << physCustomMovement.PhysFloats;
+	archive << physCustomMovement.PhysDoubles;
+	archive << physCustomMovement.PhysVectors;
+	archive << physCustomMovement.PhysVectors2D;
+	archive << physCustomMovement.PhysVectors4;
+	archive << physCustomMovement.PhysRotators;
+	archive << physCustomMovement.PhysQuats;
+	//archive << physCustomMovement.PhysGameplayTags;  // TODO: gameplay tags serializes to FName, we have to handle that in the serialization of the predicted property
 
-	return ar;
+	return archive;
 }

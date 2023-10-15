@@ -47,6 +47,8 @@ public:
 
 	FPMNetworkPredictionData_Client(const UCharacterMovementComponent& ClientMovement);
 
+	virtual ~FPMNetworkPredictionData_Client() override { Super::~Super(); }
+
 	///@brief Allocates a new copy of our custom saved move
 	virtual FSavedMovePtr AllocateNewMove() override;
 };

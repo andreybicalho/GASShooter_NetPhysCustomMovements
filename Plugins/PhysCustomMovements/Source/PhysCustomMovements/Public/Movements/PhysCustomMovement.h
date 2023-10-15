@@ -28,6 +28,11 @@ struct FPhysPredictedProperty
 		return Name == other.Name;
 	}
 
+	bool operator !=(const FPhysPredictedProperty& other) const
+	{
+		return !(*this == other);
+	}
+
 	friend FArchive& operator<<(FArchive& archive, FPhysPredictedProperty& physPredictedProperty)
 	{
 		archive << physPredictedProperty.Name;
@@ -61,23 +66,30 @@ public:
 	TWeakObjectPtr<UCharacterMovementComponent> CharacterMovementComponent;
 
 	/** Name of the custom movement. */
+	UPROPERTY()
 	FName MovementName;
 
 	/** Time elapsed so far for this movement */
+	UPROPERTY()
 	float CurrentTime;
 
 	/** Whether or not this movement is running */
+	UPROPERTY()
 	bool bIsActive;
 
 	/** overrides the maximum speed for this movement mode */
+	UPROPERTY()
 	float MaxSpeed;
 
 	/** overrides the maximum acceleration for this movement mode */
+	UPROPERTY()
 	float MaxAcceleration;
 
 	/** overrides the maximum braking deceleration for this movement mode */
+	UPROPERTY()
 	float MaxBrakingDeceleration;
 
+	UPROPERTY()
 	FVector CurrentVelocity;
 
 	EMovementMode FallbackMovementMode = EMovementMode::MOVE_Falling;
@@ -92,6 +104,7 @@ public:
 
 	float TimeSkippingMovement;
 
+	UPROPERTY()
 	float LocationErrorToleranceThreshold;
 
 	// predicted properties (they carry on information from the movement, client can predict them and then send them to server)
@@ -171,13 +184,12 @@ public:
 	/** True when this movement is running. */
 	bool IsActive() const { return bIsActive; }
 
-	/** @return newly allocated copy of this FPhysCustomMovement. Must be overridden by child classes. */
-	virtual FPhysCustomMovement* Clone() const;
+	virtual void SetupBaseFromCustomMovement(const FPhysCustomMovement& physCustomMovement);
+	virtual void Clear();
 
+	// network client corrections workaround
 	bool SkipThisUpdate(const float deltaTime);
-
 	void HoldMovementUpdates();
-
 	void ResetUpdateSkipping();
 
 	// Bind Predicted Properties
@@ -193,18 +205,14 @@ public:
 	void BindQuatProperty(const FName name);
 	void BindGameplayTagProperty(const FName name);
 
-	bool HasBoundPredictedProperties() const;
-	void ClearPredictedProperties();
-	virtual void Clear();
-
-	virtual void SetupBaseFromCustomMovement(const FPhysCustomMovement& physCustomMovement);
 	void SetupPredictedProperties(FPhysCustomMovement& outPhysCustomMovement);
 	void ReflectFromOtherPredPropsByMyKeys(const FPhysCustomMovement& otherPhysCustomMovement);
 	void ReflectFromOtherPredictedProperties(const FPhysCustomMovement& otherPhysCustomMovement);
+	bool HasBoundPredictedProperties() const;
+	void ClearPredictedProperties();
 
-	// serialization
-	virtual bool NetSerialize(FArchive& ar, UPackageMap* map, bool& bOutSuccess);
-	virtual UScriptStruct* GetScriptStruct() const;
+	/** @return newly allocated copy of this FPhysCustomMovement. Must be overridden by child classes. */
+	virtual FPhysCustomMovement* Clone() const;
 
 	bool operator==(const FPhysCustomMovement& other) const
 	{
@@ -213,10 +221,14 @@ public:
 
 	bool operator!=(const FPhysCustomMovement& other) const
 	{
-		return MovementName != other.MovementName;
+		return !(*this == other);
 	}
 
-	friend FArchive& operator<<(FArchive& ar, FPhysCustomMovement& physCustomMovement);
+	// serialization
+	virtual bool NetSerialize(FArchive& ar, UPackageMap* map, bool& bOutSuccess);
+	virtual UScriptStruct* GetScriptStruct() const;
+
+	friend FArchive& operator<<(FArchive& archive, FPhysCustomMovement& physCustomMovement);
 };
 
 template<>

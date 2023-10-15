@@ -2,7 +2,6 @@
 
 #include "Components/PMCharacterMovementComponent.h"
 #include "GameFramework/Character.h"
-#include "Movements/PhysCustomMovement_NonDeterministicMove.h" // TODO: remove this when figure out how to bind non predicted data dynamically
 
 DEFINE_LOG_CATEGORY(LogPhysCustomMovement);
 
@@ -69,8 +68,8 @@ FNetworkPredictionData_Client* UPMCharacterMovementComponent::GetPredictionData_
 	if (!ClientPredictionData)
 	{
 		UPMCharacterMovementComponent* MutableThis = const_cast<UPMCharacterMovementComponent*>(this);
-
 		MutableThis->ClientPredictionData = new FPMNetworkPredictionData_Client(*this);
+
 		//MutableThis->ClientPredictionData->MaxSmoothNetUpdateDist = 92.f;
 		//MutableThis->ClientPredictionData->NoSmoothNetUpdateDist = 140.f;
 	}
@@ -400,6 +399,16 @@ bool FPMSavedMove::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* Char
 		return false;
 	}
 
+	if (Saved_PhysCustomMovement != newPMMove->Saved_PhysCustomMovement)
+	{
+		return false;
+	}
+
+	if (Saved_PhysCustomMovement.bIsActive != newPMMove->Saved_PhysCustomMovement.bIsActive)
+	{
+		return false;
+	}
+
 	// NOTE: ideally we would check each property using FMath::IsNearlyEqual or equivalent, 
 	// but it would be too expensive looping through all the arrays and check the difference between each predicted property if we had too much of them, 
 	// so for now we just check the array like so:
@@ -458,6 +467,16 @@ bool FPMSavedMove::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* Char
 		return false;
 	}
 
+	// TODO: ideally we would check differences between each predicted property, but that can be a little bit overwhelming
+	// so for now we just check if velocity vectors are kinda similar
+
+	const float velSimilarityThreshold = 0.6f;
+	const float velDotProd = FVector::DotProduct(Saved_PhysCustomMovement.CurrentVelocity, newPMMove->Saved_PhysCustomMovement.CurrentVelocity);
+	if (velDotProd < velSimilarityThreshold)
+	{
+		return false;
+	}
+
 	return Super::CanCombineWith(NewMove, Character, MaxDelta);
 }
 
@@ -509,7 +528,7 @@ FSavedMovePtr FPMNetworkPredictionData_Client::AllocateNewMove()
 	return FSavedMovePtr(new FPMSavedMove());
 }
 // 
-FPMCharacterNetworkMoveDataContainer::FPMCharacterNetworkMoveDataContainer() // : Super()
+FPMCharacterNetworkMoveDataContainer::FPMCharacterNetworkMoveDataContainer() : Super()
 {
 	NewMoveData = &CustomDefaultMoveData[0];
 	PendingMoveData = &CustomDefaultMoveData[1];
@@ -517,17 +536,41 @@ FPMCharacterNetworkMoveDataContainer::FPMCharacterNetworkMoveDataContainer() // 
 }
 
 //Sends the Movement Data 
-bool FPMCharacterNetworkMoveData::Serialize(UCharacterMovementComponent& CharacterMovement, FArchive& Ar, UPackageMap* PackageMap, ENetworkMoveType MoveType)
+bool FPMCharacterNetworkMoveData::Serialize(UCharacterMovementComponent& CharacterMovement, FArchive& archive, UPackageMap* PackageMap, ENetworkMoveType MoveType)
 {
-	Super::Serialize(CharacterMovement, Ar, PackageMap, MoveType);
+	const bool bSuperSuccess = Super::Serialize(CharacterMovement, archive, PackageMap, MoveType);
+
+	if (!bSuperSuccess)
+	{
+		UE_LOG(LogPhysCustomMovement, Error, TEXT("%s: %s: Couldn't serialize CharacterNetworkMoveData (%s)"),
+			ANSI_TO_TCHAR(__FUNCTION__),
+			GET_ACTOR_LOCAL_ROLE_FSTRING(CharacterMovement.GetCharacterOwner()),
+			*MoveData_PhysCustomMovement.MovementName.ToString());
+	}
 
 	if (MoveData_PhysCustomMovement.IsActive())
 	{
-		//SerializeOptionalValue<FPhysCustomMovement>(Ar.IsSaving(), Ar, MoveData_PhysCustomMovement, FPhysCustomMovement()); // (using operator<< on Archive)
-		NetSerializeOptionalValue<FPhysCustomMovement>(Ar.IsSaving(), Ar, MoveData_PhysCustomMovement, FPhysCustomMovement(), PackageMap); // (using the NetSerialize function)
+		//SerializeOptionalValue<FPhysCustomMovement>(Ar.IsSaving(), archive, MoveData_PhysCustomMovement, FPhysCustomMovement()); // (using operator<< on Archive)
+		const bool bLocalSuccess = NetSerializeOptionalValue<FPhysCustomMovement>(archive.IsSaving(), archive, MoveData_PhysCustomMovement, FPhysCustomMovement(), PackageMap); // (using the NetSerialize function)
+
+		if (!bLocalSuccess)
+		{
+			UE_LOG(LogPhysCustomMovement, Error, TEXT("%s: %s: Couldn't serialize %s"),
+				ANSI_TO_TCHAR(__FUNCTION__),
+				GET_ACTOR_LOCAL_ROLE_FSTRING(CharacterMovement.GetCharacterOwner()),
+				*MoveData_PhysCustomMovement.MovementName.ToString());
+		}
 	}
 
-	return !Ar.IsError();
+	if (archive.IsError())
+	{
+		UE_LOG(LogPhysCustomMovement, Error, TEXT("%s: %s: Archive has errors during serialization of CharacterNetworkMoveData (%s)"),
+			ANSI_TO_TCHAR(__FUNCTION__),
+			GET_ACTOR_LOCAL_ROLE_FSTRING(CharacterMovement.GetCharacterOwner()),
+			*MoveData_PhysCustomMovement.MovementName.ToString());
+	}
+
+	return !archive.IsError();
 }
 
 void FPMCharacterNetworkMoveData::ClientFillNetworkMoveData(const FSavedMove_Character& ClientMove, ENetworkMoveType MoveType)
@@ -539,8 +582,13 @@ void FPMCharacterNetworkMoveData::ClientFillNetworkMoveData(const FSavedMove_Cha
 	// TODO: should fill it anyways or only if active?
 	MoveData_PhysCustomMovement = savedMove.Saved_PhysCustomMovement;
 
-	/*if (savedMove.Saved_PhysCustomMovement.IsActive())
+	/*if (MoveData_PhysCustomMovement.IsActive())
 	{
-		MoveData_PhysCustomMovement = savedMove.Saved_PhysCustomMovement;
+		UE_LOG(LogPhysCustomMovement, Log, TEXT("%s: %s: %s - Timestamp: %.2f, saved Timestamp: %.2f"),
+			ANSI_TO_TCHAR(__FUNCTION__),
+			MoveData_PhysCustomMovement.CharacterMovementComponent.IsValid() ? GET_ACTOR_LOCAL_ROLE_FSTRING(MoveData_PhysCustomMovement.CharacterMovementComponent->GetCharacterOwner()) : TEXT(""),
+			*MoveData_PhysCustomMovement.MovementName.ToString(),
+			TimeStamp,
+			savedMove.TimeStamp);
 	}*/
 }
