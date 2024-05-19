@@ -1,6 +1,6 @@
 # Networked Physical Custom Movement
 
-[![Results](image.png)](https://youtu.be/PFT_Naj2r_U)
+[![Results](https://img.youtube.com/vi/PFT_Naj2r_U/0.jpg)](https://youtu.be/PFT_Naj2r_U)
 
 This project aims to facilitate the creation of physical movements for multiplayer games while integrating with the `Gameplay Ability System (GAS)`. The main goal is to separate the movement logic from the `Character Movement Component (CMC)` so programmers can focus on the movement mechanics themselves rather than network code while maintaining the server-authoritative model. We tried to achieve this by extending the `CMC` and leveraging its network pipeline.
 
