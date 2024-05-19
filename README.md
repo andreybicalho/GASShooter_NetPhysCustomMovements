@@ -1,14 +1,18 @@
-# GASShooter
+# Networked Physical Custom Movement
 
-## Introduction
+[![Results](image.png)](https://youtu.be/PFT_Naj2r_U)
 
-GASShooter is an advanced FPS/TPS Sample Project for Unreal Engine 5's GameplayAbilitySystem (GAS) plugin. This is a sister project to the [GASDocumentation](https://github.com/tranek/GASDocumentation) and information about the techniques demonstrated here will be discussed in detail in the README there.
+This project aims to facilitate the creation of physical movements for multiplayer games while integrating with the `Gameplay Ability System (GAS)`. The main goal is to separate the movement logic from the `Character Movement Component (CMC)` so programmers can focus on the movement mechanics themselves rather than network code while maintaining the server-authoritative model. We tried to achieve this by extending the `CMC` and leveraging its network pipeline.
 
-This is not production-ready code but a starting point for evaluating different techniques in GAS relating to using weapons. TargetActors with persistent hit results and ReticleActors particularly do a lot of code on `Tick()`.
+The project is designed to be added as a plugin, which can be integrated into any game that uses the `CMC`. While `GAS` assists with triggering movements, it is also intended to work with non-GAS projects. [GASShooter](https://github.com/tranek/GASShooter) was used as a base project since it contains all the necessary game functionalities.
 
-Assets included come from Epic Games' ShooterGame learning project, Epic Games' Infinity Blade assets, or made by myself.
+In this example, you will find the following movements:
 
-GASShooter is current with **Unreal Engine 5.0**. There are branches of this Sample Project for older versions of Unreal Engine, but they are no longer supported and are liable to have bugs or out of date information.
+* *Jump:* A launch force applied for a brief moment.
+* *Jet pack:* A constant force applied over time.
+* *Sprint:* Running at a higher speed.
+* *Move to points:* Moving through each point generated from a spline or similar path.
+* *Non-Deterministic movement:* Still a work in progress (well all of this is). The idea is to have movements that can be non-deterministic, meaning the internal movement state on the server and client can be different at a given time.
 
 | Keybind             | Action                                                      |
 | ------------------- | ----------------------------------------------------------- |
@@ -22,39 +26,11 @@ GASShooter is current with **Unreal Engine 5.0**. There are branches of this Sam
 | Left Ctrl           | Cancels targeting.                                          |
 | Left Shift          | Sprint.                                                     |
 | E                   | Interact with interactable objects.                         |
+| Spacebar            | Jump.                                                       |
+| F                   | Jetpack.                                                    |
+| Q                   | Follow spline points.                                       |
+| C                   | Randomly inverts movement direction every 5 seconds.        |
 
-| Console Command | Action                  |
-| --------------- | ----------------------- |
-| `kill`          | Kills the local player. |
+## Disclaimer
 
-The Hero character does have mana but no abilities currently use it. This project's inception started when the new BioShock was announced and the idea was to include BioShock-like upgradeable abilities. That made the scope too large, but it is something that may be revisited in the future.
-
-Secondary ammo is not used. It would be used for things like rifle grenades.
-
-## Concepts covered
-
-* [Ability Batching](https://github.com/tranek/GASDocumentation#concepts-ga-batching)
-* Equippable weapons that grant abilities
-* Predicting weapon switching
-* [Weapon ammo](https://github.com/tranek/GASDocumentation#concepts-as-design-itemattributes)
-* Simple weapon inventory
-* Headshot bonus damage
-* [Reusable, custom TargetActors](https://github.com/tranek/GASDocumentation#concepts-targeting-actors)
-* [GameplayAbilityWorldReticles](https://github.com/tranek/GASDocumentation#concepts-targeting-reticles)
-* Play replicated montages on multiple Skeletal Mesh Components **belonging to the AvatarActor** in an ability
-* [Subclassing `FGameplayEffectContext`](https://github.com/tranek/GASDocumentation#concepts-ge-context) to send additional information to GameplayCues
-* Character shield that drains before health is removed by damage
-* Item pickups
-* Single button interaction system. Press or Hold 'E' to interact with interactable objects including player reviving, a weapon chest, and a sliding door.
-
-This project does not show predicting projectiles. I refer you to the Unreal Tournament source code for how to do that using a fake projectile on the owning client.
-
-| Weapon          | Primary Ability (Left Mouse Button)                  | Secondary Ability (Right Mouse Button)                                                                     | Alternate Ability (Middle Mouse Button)                     |
-| --------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| Rifle           | Fire hitscan bullets based on the current fire mode. | Aim down sights, reduces firing spread.                                                                    | Changes fire modes between full auto, semi auto, and burst. |
-| Rocket Launcher | Fire a rocket.                                       | Aim down sights. Starts lock-on targeting for homing rockets. Press LMB to fire homing rockets at targets. | None                                                        |
-| Shotgun         | Fire hitscan pellets based on the current fire mode. | Aim down sights, reduces firing spread for pellets.                                                        | Changes fire modes between semi auto and full auto.         |
-
-## Acknowledgements
-
-[KaosSpectrum](https://github.com/KaosSpectrum) provided significant contributions to figuring out how the ability batching system works and general feedback. Check out his game development [blog](https://www.thegames.dev/).
+This is an abandoned working in progress since `Root Motion Sources` does this in a much more seamless and integrated manner, also `Mover 2.0` is already available. Use it at your own risk.
